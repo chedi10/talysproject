@@ -1,0 +1,12 @@
+{
+  "model_name": "GraphSAGE",
+  "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\graphsage.pt",
+  "best_auc": 0.5783,
+  "features": [
+    "age",
+    "revenu_mensuel",
+    "profession_enc",
+    "kyc_score"
+  ],
+  "label_strategy": "client default = max(en_defaut) over all credits"
+}

@@ -1,0 +1,8 @@
+{
+  "feature_order": [
+    "age",
+    "revenu_mensuel",
+    "profession_enc"
+  ],
+  "description": "KYC score 0-100 estimated from client attributes"
+}

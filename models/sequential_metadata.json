@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "model_name": "LSTM baseline",
+      "auc_roc": 0.7500619339593427,
+      "avg_precision": 0.4679282566361808,
+      "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\sequential_lstm.pt"
+    },
+    {
+      "model_name": "GRU baseline",
+      "auc_roc": 0.7552840386658473,
+      "avg_precision": 0.4669664639631636,
+      "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\sequential_gru.pt"
+    }
+  ],
+  "best": {
+    "model_name": "GRU baseline",
+    "auc_roc": 0.7552840386658473,
+    "avg_precision": 0.4669664639631636,
+    "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\sequential_gru.pt"
+  }
+}

@@ -1,12 +1,26 @@
 {
-  "model_name": "GraphSAGE",
-  "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\graphsage.pt",
-  "best_auc": 0.5783,
+  "model_name": "GAT (Graph Attention Network)",
+  "model_type": "gat",
+  "artifact": "models\\graph_gat.pt",
+  "best_auc": 0.8173,
   "features": [
-    "age",
-    "revenu_mensuel",
-    "profession_enc",
-    "kyc_score"
+    "age_norm",
+    "revenu_norm",
+    "profession_enc_norm",
+    "kyc_score_norm",
+    "statut_kyc_enc_norm",
+    "n_credits_norm",
+    "avg_dti_norm",
+    "max_dti_norm",
+    "pct_late_remb_norm",
+    "avg_retard_norm",
+    "n_suspect_tx_norm",
+    "log_degree_norm",
+    "neighbor_avg_dti_norm",
+    "neighbor_avg_retard_norm",
+    "neighbor_risk_weight_norm"
   ],
-  "label_strategy": "client default = max(en_defaut) over all credits"
+  "n_edges": 39952,
+  "n_nodes": 5000,
+  "edge_weighted": true
 }

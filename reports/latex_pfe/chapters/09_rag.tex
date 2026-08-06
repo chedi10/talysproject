@@ -1,0 +1,134 @@
+% Chapitre 9 — RAG et rapports
+\chapter{RAG et génération de rapports intelligents}
+\label{ch:rag}
+
+\section{Principe du RAG}
+
+Le \textbf{Retrieval-Augmented Generation} combine :
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Retrieval} : recherche de passages pertinents dans une base documentaire ;
+  \item \textbf{Augmentation} : injection de ces passages dans le prompt LLM ;
+  \item \textbf{Generation} : rédaction du rapport ou de l'explication.
+\end{enumerate}
+
+\textbf{Règle fondamentale du projet} : le RAG enrichit le \textit{texte}, jamais les \textit{scores numériques} produits par les modèles ML.
+
+\section{Architecture RAG locale}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Index} : TF-IDF (scikit-learn), matrice sparse, chunks de $\sim$850 caractères ;
+  \item \textbf{Stockage} : \texttt{models/rag\_index.joblib} ;
+  \item \textbf{Corpus curé} :
+    \begin{itemize}
+      \item \texttt{reports/knowledge\_base/ref08\_extrait.txt}
+      \item \texttt{reports/knowledge\_base/regles\_metier\_microfinance.md}
+      \item \texttt{reports/criteres\_score\_et\_crispdm.md}
+    \end{itemize}
+  \item \textbf{Exclusions} : rapports générés, fichiers demo, notes dev.
+\end{itemize}
+
+\section{Pipeline de retrieval}
+
+\subsection{Multi-query retrieval}
+
+Plutôt qu'une requête monolithique, le module \texttt{build\_rag\_query()} génère plusieurs sous-requêtes :
+\begin{itemize}[leftmargin=*]
+  \item requête REF-08 générique ;
+  \item requête par niveau de risque (FAIBLE/MODERE/ELEVE) ;
+  \item requête par modèle (LSTM, GraphSAGE...) ;
+  \item requête par score KYC ;
+  \item tokens significatifs du message utilisateur.
+\end{itemize}
+
+La fonction \texttt{retrieve\_multi()} fusionne les résultats en gardant le meilleur score par chunk.
+
+\subsection{Seuil de pertinence}
+
+Un score cosine minimum (\texttt{min\_score=0.06}) filtre le bruit. Si aucun chunk ne dépasse le seuil, le meilleur résultat est conservé pour ancrage REF-08.
+
+\section{Formatage pour le LLM}
+
+\texttt{format\_rag\_sources\_for\_prompt()} produit :
+\begin{lstlisting}[caption={Exemple extrait RAG injecté au LLM}]
+## Extraits documentaires (RAG)
+### [1] knowledge_base/ref08_extrait.txt#0 (pertinence=0.329)
+REF-08 — Spécifications Techniques...
+\end{lstlisting}
+
+Limite de contexte : 4000 caractères (configurable).
+
+\section{Génération de rapports}
+
+\subsection{Endpoint /report/by-cin}
+
+Workflow :
+\begin{enumerate}[leftmargin=*]
+  \item Scoring classique + séquentiel + graphe (LLM off) ;
+  \item Retrieval RAG multi-query ;
+  \item Prompt LLM avec JSON résultats + extraits RAG ;
+  \item Fallback Markdown déterministe si Ollama timeout ;
+  \item Sauvegarde \texttt{reports/generated/report\_\{cin\}.md}.
+\end{enumerate}
+
+\subsection{Structure obligatoire du rapport}
+
+\begin{enumerate}[leftmargin=*]
+  \item Résumé
+  \item Résultat classique
+  \item Résultat séquentiel
+  \item Résultat graphe
+  \item Justification
+  \item Recommandation
+  \item Références (citations source\#chunk)
+  \item Disclaimer (données synthétiques, décision humaine)
+\end{enumerate}
+
+\section{Export PDF}
+
+Module ReportLab (\texttt{\_markdown\_to\_simple\_pdf}) :
+\begin{itemize}[leftmargin=*]
+  \item logo Talys en en-tête (\texttt{reports/assets/talys\_logo.png}) ;
+  \item normalisation Unicode $\rightarrow$ ASCII pour compatibilité fonts ;
+  \item pagination automatique.
+\end{itemize}
+
+\section{Enrichissement des explications /explain}
+
+Les endpoints \api{/explain*} injectent désormais un contexte RAG compact dans le prompt Ollama via \texttt{\_rag\_context\_for\_scoring()}, améliorant la pertinence métier des explications courtes.
+
+\section{Reconstruction de l'index}
+
+\begin{lstlisting}[caption={Rebuild manuel de l'index RAG}]
+python -m src.rag.index
+\end{lstlisting}
+
+Rebuild automatique si un fichier source est modifié (comparaison \texttt{mtime}).
+
+\section{Limites et évolutions}
+
+\begin{table}[H]
+  \centering
+  \caption{RAG actuel vs cible production}
+  \begin{tabular}{|l|l|l|}
+    \hline
+    Aspect & Prototype & Production \\
+    \hline
+    Embedding & TF-IDF & Sentence-BERT / OpenAI \\
+    \hline
+    Vector DB & Joblib local & FAISS / Chroma / Pinecone \\
+    \hline
+    Corpus & 3 fichiers & REF-08 complet + policies \\
+    \hline
+    Evaluation & Manuel & RAGAS, faithfulness score \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Éthique et conformité}
+
+\begin{itemize}[leftmargin=*]
+  \item Le LLM ne doit pas inventer de chiffres absents des entrées JSON ;
+  \item Les références citées sont vérifiables (source\#chunk) ;
+  \item Disclaimer explicite dans chaque rapport ;
+  \item Décision crédit reste humaine (comité, analyste senior).
+\end{itemize}

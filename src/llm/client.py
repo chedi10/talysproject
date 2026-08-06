@@ -17,6 +17,7 @@ def build_risk_prompt(
     risk_level: str,
     default_proba: float,
     features: Dict[str, Any],
+    rag_context: str | None = None,
 ) -> str:
     """
     Build a French prompt explaining the credit risk profile.
@@ -37,12 +38,20 @@ def build_risk_prompt(
     for k, v in features.items():
         lines.append(f"- {k}: {v}")
 
+    if rag_context and rag_context.strip():
+        lines += [
+            "",
+            "Références métier (RAG — pour contextualiser l'explication, sans modifier les scores) :",
+            rag_context.strip(),
+        ]
+
     lines += [
         "",
         "Tâche :",
         "- Indique si le profil est risqué ou non (en t'appuyant sur le niveau de risque fourni).",
         "- Explique en 3 à 6 phrases maximum les raisons probables du niveau de risque,",
         "  en te basant uniquement sur les informations fournies (ne pas inventer d'autres données).",
+        "- Tu peux t'appuyer sur les références métier si elles sont pertinentes.",
         "- Utilise un ton professionnel, sans jargon statistique compliqué.",
     ]
 
@@ -61,6 +70,8 @@ def generate_risk_explanation(
     risk_level: str,
     default_proba: float,
     features: Dict[str, Any],
+    *,
+    rag_context: str | None = None,
 ) -> str:
     """
     Call the local Ollama server to generate a natural-language explanation.
@@ -69,7 +80,7 @@ def generate_risk_explanation(
         ollama serve
         ollama pull llama3.1
     """
-    prompt = build_risk_prompt(risk_level, default_proba, features)
+    prompt = build_risk_prompt(risk_level, default_proba, features, rag_context=rag_context)
 
     payload = {
         "model": _ollama_model(),

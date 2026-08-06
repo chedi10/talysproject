@@ -1,0 +1,327 @@
+% =============================================================================
+% Annexes
+% =============================================================================
+\appendix
+\chapter{Annexe A — Liste complète des features}
+\label{ann:features}
+
+\begin{longtable}{|p{4.5cm}|p{2cm}|p{7cm}|}
+  \caption{Variables du modèle classique (feature\_order)} \\
+  \hline
+  \textbf{Feature} & \textbf{Type} & \textbf{Description} \\
+  \hline
+  \endfirsthead
+  \hline
+  \textbf{Feature} & \textbf{Type} & \textbf{Description} \\
+  \hline
+  \endhead
+  montant & float & Montant du crédit (TND) \\
+  \hline
+  duree\_mois & int & Durée en mois \\
+  \hline
+  dti & float & Debt-to-income ratio \\
+  \hline
+  revenu\_mensuel & float & Revenu mensuel client \\
+  \hline
+  age & int & Age du client \\
+  \hline
+  kyc\_score & float & Score KYC 0--100 (calculé) \\
+  \hline
+  profession\_enc & int & Profession encodée 0--7 \\
+  \hline
+  cycle\_enc & int & Cycle crédit encodé \\
+  \hline
+  objet\_enc & int & Objet crédit encodé \\
+  \hline
+  avg\_retard & float & Retard moyen (jours) \\
+  \hline
+  max\_retard & float & Retard maximum \\
+  \hline
+  std\_retard & float & Ecart-type retards \\
+  \hline
+  n\_payments & int & Nombre d'échéances \\
+  \hline
+  n\_late & int & Paiements en retard \\
+  \hline
+  pct\_late & float & Proportion retards \\
+  \hline
+  n\_en\_retard & int & Retards sévères ($\geq$90j) \\
+  \hline
+  n\_transactions & int & Nombre transactions \\
+  \hline
+  n\_suspect & int & Transactions suspectes \\
+  \hline
+  avg\_tx\_amount & float & Montant moyen transaction \\
+  \hline
+  total\_depot & float & Total dépôts \\
+  \hline
+  total\_retrait & float & Total retraits \\
+  \hline
+  total\_remboursement & float & Total remboursements \\
+  \hline
+  total\_transfert & float & Total transferts \\
+  \hline
+  ratio\_retrait\_depot & float & Ratio retrait/dépôt \\
+  \hline
+  max\_risk\_relation & float & Risque relation max \\
+  \hline
+  avg\_risk\_relation & float & Risque relation moyen \\
+  \hline
+  n\_relations & int & Nombre de relations \\
+  \hline
+  n\_garant & int & Nombre de garants \\
+  \hline
+\end{longtable}
+
+\chapter{Annexe B — Guide d'installation}
+\label{ann:install}
+
+\section{Prérequis}
+
+\begin{itemize}[leftmargin=*]
+  \item Python 3.11+
+  \item Node.js 18+
+  \item Git
+  \item Ollama (optionnel, pour LLM)
+  \item 8 Go RAM minimum
+\end{itemize}
+
+\section{Installation backend}
+
+\begin{lstlisting}[language=bash,caption={Setup Python}]
+cd Talys_pfe
+python -m venv venv
+venv\Scripts\activate        # Windows
+pip install -r requirements.txt
+python generate_data.py
+python -m src.features.engineering
+python -m src.models.train
+python -m src.kyc.score
+python -m src.models.sequential.train
+python -m src.models.graph.train
+python -m src.rag.index
+uvicorn src.api.main:app --reload --port 8000
+\end{lstlisting}
+
+\section{Installation frontend}
+
+\begin{lstlisting}[language=bash,caption={Setup React}]
+cd frontend
+npm install
+npm run dev
+\end{lstlisting}
+
+\chapter{Annexe C — Extrait REF-08}
+\label{ann:ref08}
+
+\begin{tcolorbox}[colback=codebg,colframe=codeframe,title=REF-08 — Extrait]
+\textbf{1.1 Modèles d'Intelligence Artificielle}\\
+Objectif: estimer le score KYC ainsi que l'évaluation du profil de risque crédit des clients.
+
+\textbf{1.1.2 Modèles de Scoring Classiques}\\
+- Régression Logistique\\
+- Forêt Aléatoire\\
+- XGBoost
+
+\textbf{1.1.3 Modèles Séquentiels}\\
+- LSTM, GRU
+
+\textbf{1.1.4 Modèles de Graphes}\\
+- GNN, GraphSAGE
+
+\textbf{1.1.5 Sorties}\\
+Score KYC, Score risque crédit, Probabilité de défaut, Explication du score.
+
+\textbf{1.2 Agent Conversationnel}\\
+LangChain, tools ML, mémoire conversationnelle.
+\end{tcolorbox}
+
+\chapter{Annexe D — Code orchestrateur LangGraph}
+\label{ann:langgraph}
+
+\begin{lstlisting}[caption={Extrait CreditAgentOrchestrator — construction graphe},label={lst:orch}]
+def _build_graph(self):
+    g = StateGraph(AgentState)
+    g.add_node("ExtractCIN", self._node_extract_cin)
+    g.add_node("DetectIntent", self._node_detect_intent)
+    g.add_node("ChoosePath", self._node_choose_path)
+    g.add_node("RunClassic", self._node_run_classic)
+    g.add_node("RunSequential", self._node_run_sequential)
+    g.add_node("RunGraph", self._node_run_graph)
+    g.add_node("RunFullReport", self._node_run_full_report)
+    g.add_node("RunCompareModels", self._node_run_compare_models)
+    g.add_node("RetrieveDocs", self._node_retrieve_docs)
+    g.add_node("WriteReport", self._node_write_report)
+    g.add_node("Respond", self._node_respond)
+    g.add_edge(START, "ExtractCIN")
+    g.add_edge("ExtractCIN", "DetectIntent")
+    g.add_edge("DetectIntent", "ChoosePath")
+    g.add_conditional_edges("ChoosePath", self._route_from_state, {...})
+    g.add_edge("RunClassic", "RetrieveDocs")
+    # ... autres routes vers RetrieveDocs
+    g.add_edge("RetrieveDocs", "WriteReport")
+    g.add_edge("WriteReport", "Respond")
+    g.add_edge("Respond", END)
+    return g.compile()
+\end{lstlisting}
+
+\chapter{Annexe E — Règles métier microfinance}
+\label{ann:regles}
+
+\begin{tcolorbox}[colback=codebg,colframe=codeframe,breakable]
+\textbf{Niveaux de risque}\\
+FAIBLE : probabilité faible, KYC conforme, peu de retards.\\
+MODERE : vigilance accrue, suivi renforcé.\\
+ELEVE : retards répétés, décision humaine obligatoire.
+
+\textbf{Recommandations}\\
+FAIBLE $\rightarrow$ validation sous surveillance standard.\\
+MODERE $\rightarrow$ conditions renforcées, revue à 3 mois.\\
+ELEVE $\rightarrow$ refus ou restructuration comité crédit.
+
+\textbf{Conformité}\\
+Données synthétiques en démo. Rapport IA n'altère pas les scores ML.
+\end{tcolorbox}
+
+\chapter{Annexe F — Diagrammes PlantUML complets}
+\label{ann:plantuml}
+
+\section{Cas d'utilisation}
+
+\begin{lstlisting}[language={},caption={PlantUML Use Case}]
+@startuml
+left to right direction
+actor "Analyste Crédit" as Analyste
+actor "Manager Risque" as Manager
+actor "Administrateur" as Admin
+rectangle "Plateforme Scoring" {
+  usecase "Analyser client par CIN" as UC1
+  usecase "Chat conversationnel" as UC2
+  usecase "Comparer modeles" as UC3
+  usecase "Generer rapport RAG" as UC4
+  usecase "Telecharger PDF/MD" as UC5
+  usecase "Administration API" as UC6
+}
+Analyste --> UC1
+Analyste --> UC2
+Analyste --> UC4
+Manager --> UC3
+Admin --> UC6
+@enduml
+\end{lstlisting}
+
+\section{Diagramme de classes}
+
+\begin{lstlisting}[language={},caption={PlantUML Class Diagram}]
+@startuml
+package Frontend { class ReactApp; class ApiClient; }
+package Backend { class FastAPIApp; }
+package Orchestration {
+  class CreditAgentOrchestrator
+  class AgentState
+}
+package Scoring {
+  class ClassicScoring
+  class SequentialScoring
+  class GraphScoring
+}
+package RAG { class RagIndex; class RagRetriever; }
+ReactApp --> FastAPIApp
+FastAPIApp --> CreditAgentOrchestrator
+CreditAgentOrchestrator --> ClassicScoring
+CreditAgentOrchestrator --> RagRetriever
+@enduml
+\end{lstlisting}
+
+\chapter{Annexe G — Glossaire}
+\label{ann:glossaire}
+
+\begin{longtable}{|p{3.5cm}|p{10cm}|}
+  \caption{Glossaire} \\
+  \hline
+  \textbf{Terme} & \textbf{Définition} \\
+  \hline
+  \endfirsthead
+  \hline
+  \textbf{Terme} & \textbf{Définition} \\
+  \hline
+  \endhead
+  AUC-ROC & Aire sous la courbe ROC, métrique de discrimination \\
+  \hline
+  CIN & Carte d'identité nationale (identifiant client) \\
+  \hline
+  CRISP-DM & Méthodologie data mining en 6 phases \\
+  \hline
+  DTI & Debt-to-Income, ratio d'endettement \\
+  \hline
+  GraphSAGE & Graph Sample and Aggregate, GNN inductif \\
+  \hline
+  GRU & Gated Recurrent Unit, RNN \\
+  \hline
+  ICM & Interface / système core microfinance (SI métier) \\
+  \hline
+  KYC & Know Your Customer, connaissance client \\
+  \hline
+  LangGraph & Framework graphe d'états pour agents LLM \\
+  \hline
+  LSTM & Long Short-Term Memory, RNN \\
+  \hline
+  LLM & Large Language Model \\
+  \hline
+  RAG & Retrieval-Augmented Generation \\
+  \hline
+  TF-IDF & Term Frequency - Inverse Document Frequency \\
+  \hline
+\end{longtable}
+
+\chapter{Annexe H — Webographie et bibliographie}
+\label{ann:bib}
+
+\begin{thebibliography}{99}
+
+\bibitem{fastapi}
+FastAPI Documentation. \url{https://fastapi.tiangolo.com/}
+
+\bibitem{langgraph}
+LangGraph Documentation. \url{https://langchain-ai.github.io/langgraph/}
+
+\bibitem{sklearn}
+Scikit-learn: Machine Learning in Python. Pedregosa et al., JMLR 2011.
+
+\bibitem{xgboost}
+Chen, T., Guestrin, C. XGBoost: A Scalable Tree Boosting System. KDD 2016.
+
+\bibitem{graphsage}
+Hamilton, W., et al. Inductive Representation Learning on Large Graphs. NeurIPS 2017.
+
+\bibitem{hochreiter}
+Hochreiter, S., Schmidhuber, J. Long Short-Term Memory. Neural Computation, 1997.
+
+\bibitem{cho2014}
+Cho, K., et al. Learning Phrase Representations using RNN Encoder-Decoder. EMNLP 2014.
+
+\bibitem{lewis2020}
+Lewis, P., et al. Retrieval-Augmented Generation for Knowledge-Intensive NLP. NeurIPS 2020.
+
+\bibitem{crispdm}
+Chapman, P., et al. CRISP-DM 1.0 Step-by-step data mining guide. 2000.
+
+\bibitem{faker}
+Faker Python Library. \url{https://github.com/joke2k/faker}
+
+\bibitem{ollama}
+Ollama — Local LLM Runtime. \url{https://ollama.com/}
+
+\bibitem{react}
+React Documentation. \url{https://react.dev/}
+
+\bibitem{pytorch}
+PyTorch Documentation. \url{https://pytorch.org/}
+
+\bibitem{ref08}
+Talys Consulting. REF-08 — Spécifications Techniques Scoring Crédit. Document interne, 2025.
+
+\bibitem{bale2}
+BIS. Basel II — International Convergence of Capital Measurement. BIS, 2004.
+
+\end{thebibliography}

@@ -1,0 +1,185 @@
+% Chapitre 11 — Tests et validation
+\chapter{Tests, validation et résultats}
+\label{ch:tests}
+
+\section{Stratégie de test}
+
+La validation du prototype combine :
+\begin{itemize}[leftmargin=*]
+  \item tests \textbf{unitaires} implicites (scripts d'entraînement, smoke tests) ;
+  \item tests \textbf{d'intégration API} (Postman, PowerShell, Swagger) ;
+  \item tests \textbf{fonctionnels} bout-en-bout (React + API + Ollama) ;
+  \item revue \textbf{métier} (checklist REF-08).
+\end{itemize}
+
+\section{Cas de test API}
+
+Documentés dans \texttt{reports/demo\_validation\_api.md} :
+
+\begin{longtable}{|c|p{3.5cm}|p{3cm}|p{5cm}|}
+  \caption{Cas de test principaux} \\
+  \hline
+  \textbf{ID} & \textbf{Endpoint} & \textbf{CIN} & \textbf{Résultat attendu} \\
+  \hline
+  \endfirsthead
+  \hline
+  \textbf{ID} & \textbf{Endpoint} & \textbf{CIN} & \textbf{Résultat attendu} \\
+  \hline
+  \endhead
+  T1 & /explain/by-cin & 88710263 & 200, KYC + proba + message \\
+  \hline
+  T2 & /explain/sequential/by-cin & 88710263 & 200, credits[] multi-lignes \\
+  \hline
+  T3 & /explain/graph/by-cin & 88710263 & 200, GraphSAGE \\
+  \hline
+  T4 & /chat & message + CIN & intent détecté, réponse Markdown \\
+  \hline
+  T5 & /report/by-cin & 88710263 & markdown + sources RAG \\
+  \hline
+  T6 & /report/.../download & 88710263 & fichier PDF téléchargé \\
+  \hline
+  T7 & /explain/by-cin & 99999999 & 404 CIN not found \\
+  \hline
+  T8 & /health & --- & status ok \\
+  \hline
+\end{longtable}
+
+\section{Exemple de réponse REF-08 compliant}
+
+\begin{lstlisting}[caption={Réponse /explain/by-cin (extrait JSON)},label={lst:explain-json}]
+{
+  "cin": "88710263",
+  "credit_id": 12345,
+  "kyc_score": 72.5,
+  "default_proba": 0.0842,
+  "risk_level": "FAIBLE",
+  "model_used": "Logistic Regression",
+  "message": "Le profil presente un risque faible..."
+}
+\end{lstlisting}
+
+\section{Validation RAG}
+
+Après correction de l'index (corpus curé, multi-query) :
+
+\begin{table}[H]
+  \centering
+  \caption{Scores de pertinence RAG (indicatifs)}
+  \begin{tabular}{|l|r|}
+    \hline
+    \textbf{Document} & \textbf{Score TF-IDF max} \\
+    \hline
+    ref08\_extrait.txt & 0.33 \\
+    \hline
+    regles\_metier\_microfinance.md & 0.31 \\
+    \hline
+    criteres\_score\_et\_crispdm.md & 0.14 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Les fichiers de debug (\texttt{demo\_validation\_api.md}) ne sont plus indexés, éliminant le bruit observé initialement.
+
+\section{Validation orchestration LangGraph}
+
+\begin{table}[H]
+  \centering
+  \caption{Matrice intent $\rightarrow$ nœuds exécutés}
+  \begin{tabular}{|l|c|c|c|c|c|}
+    \hline
+    Intent & Classic & Seq & Graph & RAG & LLM \\
+    \hline
+    classic\_score & \checkmark & & & \checkmark & \checkmark \\
+    \hline
+    sequential\_score & & \checkmark & & \checkmark & \checkmark \\
+    \hline
+    graph\_score & & & \checkmark & \checkmark & \checkmark \\
+    \hline
+    full\_report & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \hline
+    compare\_models & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Validation frontend}
+
+Checklist manuelle React :
+\begin{enumerate}[leftmargin=*]
+  \item Logo Talys visible en header ;
+  \item Switch Explain / Chat fonctionnel ;
+  \item KPI colorés (vert/ambre/rouge) selon risque ;
+  \item Tableau crédits pour CIN multi-crédits (88710263) ;
+  \item Badges intent/path/cin après chat ;
+  \item Sources RAG affichées avec score \% ;
+  \item Téléchargement PDF avec logo.
+\end{enumerate}
+
+Build production : \texttt{npm run build} — succès sans erreur TypeScript.
+
+\section{Performance (environnement local)}
+
+\begin{table}[H]
+  \centering
+  \caption{Temps de réponse indicatifs (Windows, CPU)}
+  \begin{tabular}{|l|r|}
+    \hline
+    \textbf{Opération} & \textbf{Temps} \\
+    \hline
+    /explain/by-cin (sans LLM) & $<$ 500 ms \\
+    \hline
+    /explain/by-cin (avec Ollama) & 5--30 s \\
+    \hline
+    /report/by-cin & 30--90 s \\
+    \hline
+    /chat (full report) & 30--90 s \\
+    \hline
+    Rebuild index RAG & $<$ 15 s \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Limites des tests}
+
+\begin{itemize}[leftmargin=*]
+  \item Pas de suite pytest automatisée complète ;
+  \item Pas de tests de charge (locust) ;
+  \item Pas de validation A/B avec analystes réels ;
+  \item Métriques ML sur données synthétiques optimistes.
+\end{itemize}
+
+\section{Indicateurs de succès du PFE}
+
+\begin{table}[H]
+  \centering
+  \caption{Bilan objectifs}
+  \begin{tabular}{|l|c|p{7cm}|}
+    \hline
+    \textbf{Objectif} & \textbf{Atteint} & \textbf{Commentaire} \\
+    \hline
+    Pipeline data complet & Oui & Faker $\rightarrow$ features.parquet \\
+    \hline
+    Score KYC & Oui & Module dédié \\
+    \hline
+    3 familles ML & Oui & Classic + LSTM/GRU + GraphSAGE \\
+    \hline
+    API REST & Oui & FastAPI \\
+    \hline
+    Agent LangGraph & Oui & 5 intents \\
+    \hline
+    RAG + rapports & Oui & TF-IDF + PDF \\
+    \hline
+    UI React & Oui & Explain + Chat \\
+    \hline
+    Intégration ICM & Non & Perspective \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Retour d'expérience}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Points forts} : architecture modulaire, démo bout-en-bout convaincante, alignement REF-08 ;
+  \item \textbf{Difficultés} : timeouts Ollama, encodage PDF Unicode, pickling index RAG ;
+  \item \textbf{Leçons} : séparer scoring et LLM dès la conception ; curer le corpus RAG ; prévoir fallbacks.
+\end{itemize}

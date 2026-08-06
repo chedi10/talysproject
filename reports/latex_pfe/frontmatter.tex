@@ -1,0 +1,100 @@
+% =============================================================================
+% Pages liminaires
+% =============================================================================
+
+\begin{titlepage}
+  \centering
+  \vspace*{1cm}
+  {\Large \textbf{École Supérieure Privée d'Ingénierie et de Technologies}}\\[0.3cm]
+  {\large ESPRIT}\\[1.5cm]
+
+  \includegraphics[width=0.35\textwidth]{figures/talys_logo.png}\\[1cm]
+
+  {\huge\bfseries\color{talysblue} Plateforme Intelligente de Scoring\\[0.2cm]
+  de Risque Crédit en Microfinance}\\[0.8cm]
+  {\Large Agent Conversationnel, Orchestration LangGraph\\et Explicabilité Multi-Modèles}\\[2cm]
+
+  {\large\textbf{Projet de Fin d'Études}}\\[0.3cm]
+  {\large Cycle Ingénieur}\\[2cm]
+
+  \begin{minipage}{0.45\textwidth}
+    \raggedright
+    \textbf{Réalisé par :}\\[0.2cm]
+    Chedi \textsc{Bouali}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.45\textwidth}
+    \raggedleft
+    \textbf{Année universitaire :}\\[0.2cm]
+    2025--2026
+  \end{minipage}
+
+  \vfill
+
+  \begin{minipage}{0.9\textwidth}
+    \centering
+    \textbf{Encadrement}\\[0.5cm]
+    \begin{tabular}{p{0.45\textwidth}p{0.45\textwidth}}
+      \textbf{Entreprise — Talys Consulting} & \textbf{Académique — ESPRIT} \\[0.3cm]
+      Oussema \textsc{Midouni} & Salma \textsc{Hajjem} \\
+      Hamza \textsc{Ksentini} & \\
+    \end{tabular}
+  \end{minipage}
+
+  \vspace{1.5cm}
+  {\large Tunis, \today}
+\end{titlepage}
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\chapter*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+
+Je tiens à exprimer ma profonde gratitude à toutes les personnes qui ont contribué, de près ou de loin, à la réalisation de ce projet de fin d'études.
+
+Mes remerciements les plus sincères s'adressent à \textbf{Talys Consulting}, et particulièrement à mes encadrants professionnels \textbf{Oussema Midouni} et \textbf{Hamza Ksentini}, pour leur disponibilité, leurs orientations techniques et leur confiance tout au long du stage. Leur expertise en conseil et en transformation digitale a été déterminante pour cadrer les enjeux métier du scoring crédit en microfinance.
+
+Je remercie également mon encadrante académique, \textbf{Mme Salma Hajjem}, pour le suivi rigoureux, les retours constructifs et l'exigence scientifique qui ont guidé la rédaction de ce rapport.
+
+Je adresse mes remerciements à l'ensemble du corps enseignant de \textbf{ESPRIT} pour la qualité de la formation reçue durant le cycle ingénieur, ainsi qu'à mes collègues et amis pour les échanges enrichissants durant cette période.
+
+Enfin, je remercie ma famille pour son soutien moral et matériel, qui m'a permis de mener à bien ce projet.
+
+\vfill
+
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Ce projet de fin d'études, réalisé au sein de \textbf{Talys Consulting}, vise à concevoir et implémenter une plateforme intelligente d'évaluation du risque de crédit en microfinance. L'objectif est de répondre aux exigences du document de référence \textbf{REF-08}, en produisant notamment un \keyword{score KYC}, une \keyword{probabilité de défaut}, un \keyword{niveau de risque crédit} et une \keyword{explication du score} accessible aux métiers.
+
+La solution proposée repose sur une architecture modulaire articulée autour de trois familles de modèles d'apprentissage automatique :
+\begin{itemize}[leftmargin=*]
+  \item des modèles \textbf{classiques} (Régression Logistique, Forêt Aléatoire, XGBoost) sur des features tabulaires agrégées ;
+  \item des modèles \textbf{séquentiels} (LSTM, GRU) exploitant l'historique des transactions et remboursements ;
+  \item un modèle \textbf{de graphe} (GraphSAGE) capturant le risque relationnel entre clients.
+\end{itemize}
+
+Un \textbf{agent conversationnel} orchestré par \textbf{LangGraph} permet d'interroger le système en langage naturel (entrée par CIN), de router automatiquement vers le modèle adapté et de générer des rapports structurés. Un module \textbf{RAG} (Retrieval-Augmented Generation) enrichit les explications et rapports à partir d'une base documentaire locale (REF-08, règles métier), sans altérer les scores numériques des modèles. L'ensemble est exposé via une \textbf{API FastAPI} et une \textbf{interface React} dédiée.
+
+Les tests réalisés sur un jeu de données synthétique (5\,000 clients, environ 15\,000 crédits) démontrent la faisabilité technique du pipeline complet, de la génération des données à la restitution métier. Les perspectives incluent l'intégration avec l'écosystème ICM, la recalibration des seuils de risque et la validation sur données réelles.
+
+\textbf{Mots-clés :} scoring crédit, microfinance, KYC, LSTM, GRU, GraphSAGE, LangGraph, RAG, FastAPI, explicabilité.
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This final-year engineering project, conducted at \textbf{Talys Consulting}, aims to design and implement an intelligent credit risk scoring platform for microfinance. The solution aligns with specification document \textbf{REF-08}, delivering a \keyword{KYC score}, \keyword{default probability}, \keyword{credit risk level}, and \keyword{score explanation} for business users.
+
+The proposed architecture combines three machine-learning families: \textbf{classical} models (Logistic Regression, Random Forest, XGBoost), \textbf{sequential} models (LSTM, GRU) on transaction and repayment histories, and a \textbf{graph} model (GraphSAGE) for relational risk. A \textbf{LangGraph}-orchestrated conversational agent routes natural-language requests (CIN-based) to the appropriate models and generates structured reports. A local \textbf{RAG} module augments LLM outputs with retrieved documentation without modifying ML scores. A \textbf{FastAPI} backend and \textbf{React} frontend complete the stack.
+
+Experiments on synthetic data (5,000 clients, ~15,000 credits) validate the end-to-end pipeline. Future work includes ICM integration, threshold recalibration, and production validation.
+
+\textbf{Keywords:} credit scoring, microfinance, KYC, LSTM, GRU, GraphSAGE, LangGraph, RAG, FastAPI, explainability.
+
+\tableofcontents
+\listoffigures
+\listoftables
+\cleardoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}

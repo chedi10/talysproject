@@ -1,0 +1,98 @@
+% Chapitre 1 — Introduction générale
+\chapter{Introduction générale}
+\label{ch:intro}
+
+\section{Contexte et motivation}
+
+La microfinance joue un rôle structurant dans l'inclusion financière en Tunisie et dans la région MENA. Les institutions de microcrédit doivent concilier deux impératifs contradictoires : \textbf{accélérer l'octroi de crédit} pour répondre à la demande des micro-entrepreneurs, et \textbf{maîtriser le risque de défaut} pour préserver leur solvabilité et leur conformité réglementaire.
+
+Historiquement, l'évaluation du risque crédit repose sur des processus semi-manuels : analyse de dossiers, règles métier codifiées dans des tableurs, et décisions humaines fondées sur l'expérience des analystes. Ces approches présentent plusieurs limites :
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Scalabilité limitée} : le volume de demandes croît plus vite que les équipes d'analyse ;
+  \item \textbf{Hétérogénéité des décisions} : deux analystes peuvent interpréter différemment un même profil ;
+  \item \textbf{Faible traçabilité} : difficulté à justifier a posteriori une décision face à un audit ou un comité crédit ;
+  \item \textbf{Sous-exploitation des données} : transactions, remboursements et réseaux relationnels sont rarement intégrés de manière systématique.
+\end{itemize}
+
+L'émergence de l'\textbf{intelligence artificielle} et des \textbf{grands modèles de langage} (LLM) ouvre de nouvelles perspectives : automatiser le scoring, enrichir l'explicabilité, et permettre aux métiers d'interagir avec le système en langage naturel. C'est dans ce contexte que \textbf{Talys Consulting} a proposé un projet de fin d'études visant à prototyper une plateforme de scoring intelligente conforme au cahier des charges \textbf{REF-08}.
+
+\section{Problématique}
+
+Comment concevoir une plateforme de scoring de risque crédit capable de :
+\begin{enumerate}[leftmargin=*]
+  \item estimer simultanément le \textbf{score KYC} et le \textbf{risque de défaut} à partir de données multi-sources (profil client, crédit, transactions, remboursements, relations) ;
+  \item combiner plusieurs paradigmes de modélisation (tabulaire, séquentiel, graphe) pour une vision complémentaire du risque ;
+  \item fournir une \textbf{explication lisible} et \textbf{traçable} (références documentaires) sans altérer les scores numériques ;
+  \item être accessible aux analystes crédit via une interface conversationnelle et une API industrialisable ?
+\end{enumerate}
+
+\section{Objectifs du projet}
+
+\subsection{Objectif général}
+
+Concevoir, développer et valider un prototype fonctionnel de plateforme de scoring de risque crédit intégrant modèles ML multi-paradigmes, agent conversationnel orchestré (LangGraph), RAG et interface web.
+
+\subsection{Objectifs spécifiques}
+
+\begin{table}[H]
+  \centering
+  \caption{Objectifs spécifiques et livrables associés}
+  \label{tab:objectifs}
+  \begin{tabularx}{\textwidth}{|l|X|l|}
+    \hline
+    \textbf{ID} & \textbf{Objectif} & \textbf{Livrable} \\
+    \hline
+    O1 & Générer un dataset synthétique réaliste multi-tables & 5 fichiers CSV (Faker) \\
+    \hline
+    O2 & Calculer un score KYC (0--100) & Module \texttt{src/kyc/score.py} \\
+    \hline
+    O3 & Entraîner des modèles classiques & LR, RF, XGBoost + métriques \\
+    \hline
+    O4 & Implémenter modèles séquentiels & LSTM, GRU (PyTorch) \\
+    \hline
+    O5 & Implémenter modèle graphe & GraphSAGE (PyTorch pur) \\
+    \hline
+    O6 & Exposer une API REST & FastAPI + Swagger \\
+    \hline
+    O7 & Agent conversationnel & LangGraph + endpoint \api{/chat} \\
+    \hline
+    O8 & Rapports enrichis RAG & TF-IDF + LLM (Ollama) \\
+    \hline
+    O9 & Interface métier & Application React (Explain + Chat) \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\section{Méthodologie}
+
+Le projet suit la méthodologie \textbf{CRISP-DM} (Cross Industry Standard Process for Data Mining), structurée en six phases :
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Business Understanding} : analyse du REF-08, identification des sorties attendues (KYC, proba défaut, risque, explication) ;
+  \item \textbf{Data Understanding} : exploration du dataset synthétique, statistiques descriptives, détection d'anomalies ;
+  \item \textbf{Data Preparation} : nettoyage, agrégations multi-tables, feature engineering, encodage ;
+  \item \textbf{Modeling} : entraînement et comparaison des modèles classiques, séquentiels et graphe ;
+  \item \textbf{Evaluation} : AUC-ROC, Average Precision, matrices de confusion, tests API ;
+  \item \textbf{Deployment} : API FastAPI, agent LangGraph, frontend React, export PDF/Markdown.
+\end{enumerate}
+
+Parallèlement, le développement logiciel suit une approche \textbf{incrémentale} : pipeline data $\rightarrow$ modèles classiques $\rightarrow$ LLM explicatif $\rightarrow$ modèles avancés $\rightarrow$ orchestration $\rightarrow$ RAG $\rightarrow$ UI.
+
+\section{Organisation du rapport}
+
+Ce rapport est structuré en onze chapitres :
+\begin{itemize}[leftmargin=*]
+  \item \Cref{ch:contexte} présente le contexte organisationnel (Talys, ESPRIT) et le cadre du stage ;
+  \item \Cref{ch:existant} analyse l'existant et la solution proposée ;
+  \item \Cref{ch:besoins} détaille les spécifications REF-08 et les besoins fonctionnels ;
+  \item \Cref{ch:conception} décrit l'architecture globale et les choix de conception ;
+  \item \Cref{ch:donnees} traite de la collecte, génération et préparation des données ;
+  \item \Cref{ch:modelisation} présente les modèles ML (classique, séquentiel, graphe) ;
+  \item \Cref{ch:agent} couvre l'agent conversationnel et l'orchestration LangGraph ;
+  \item \Cref{ch:rag} détaille le module RAG et la génération de rapports ;
+  \item \Cref{ch:realisation} documente l'implémentation API et l'interface React ;
+  \item \Cref{ch:tests} présente les tests et la validation ;
+  \item \Cref{ch:conclusion} conclut et propose des perspectives.
+\end{itemize}
+
+Des annexes complètent le document (extraits de code, endpoints API, diagrammes PlantUML).

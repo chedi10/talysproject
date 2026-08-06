@@ -1,0 +1,137 @@
+% Chapitre 10 — Réalisation
+\chapter{Réalisation et implémentation}
+\label{ch:realisation}
+
+\section{Backend FastAPI}
+
+\subsection{Point d'entrée}
+
+Fichier \texttt{src/api/main.py} — application FastAPI avec :
+\begin{itemize}[leftmargin=*]
+  \item CORS middleware (frontend local) ;
+  \item chargement lazy des artefacts (modèle, séquentiel, graphe, KYC) ;
+  \item tables lookup CIN en mémoire ;
+  \item orchestrateur LangGraph singleton.
+\end{itemize}
+
+\subsection{Schémas Pydantic}
+
+\texttt{src/api/schemas.py} définit les contrats :
+\begin{itemize}[leftmargin=*]
+  \item \texttt{CreditRequest} : 20+ features pour /predict ;
+  \item \texttt{CinRequest} : CIN + credit\_id optionnel ;
+  \item \texttt{ExplanationByCinResponse} : KYC, proba, risque, message ;
+  \item \texttt{ChatRequest/Response} : session + intent ;
+  \item \texttt{ReportResponse} : markdown + sources RAG.
+\end{itemize}
+
+\subsection{Lancement}
+
+\begin{lstlisting}[caption={Démarrage serveur API}]
+uvicorn src.api.main:app --reload --port 8000
+\end{lstlisting}
+
+Documentation interactive : \url{http://localhost:8000/docs}
+
+\section{Module LLM (Ollama)}
+
+\texttt{src/llm/client.py} :
+\begin{itemize}[leftmargin=*]
+  \item variables \texttt{OLLAMA\_BASE\_URL}, \texttt{OLLAMA\_MODEL} ;
+  \item fallback \texttt{/api/generate} si \texttt{/api/chat} indisponible ;
+  \item paramètre \texttt{rag\_context} pour enrichissement ;
+  \item timeout 60s.
+\end{itemize}
+
+Prérequis :
+\begin{lstlisting}[caption={Installation Ollama}]
+ollama serve
+ollama pull llama3.2
+\end{lstlisting}
+
+\section{Frontend React}
+
+\subsection{Stack}
+
+\begin{itemize}[leftmargin=*]
+  \item React 18 + TypeScript ;
+  \item Vite (build et dev server) ;
+  \item CSS custom (thème sombre Talys, logo intégré).
+\end{itemize}
+
+\subsection{Vues}
+
+\textbf{Explain} :
+\begin{itemize}[leftmargin=*]
+  \item sélecteur modèle (classic / sequential / graph) ;
+  \item saisie CIN ;
+  \item KPI : KYC, proba défaut, risque, modèle ;
+  \item tableau crédits (si séquentiel) ;
+  \item explication LLM ;
+  \item panneau rapport RAG + sources + download MD/PDF.
+\end{itemize}
+
+\textbf{Chat} :
+\begin{itemize}[leftmargin=*]
+  \item session\_id + message ;
+  \item boutons intents rapides (classic, sequential, graph, full\_report, compare) ;
+  \item historique conversation ;
+  \item badges orchestration (intent, path, cin) ;
+  \item KPI + tableau crédits (auto-fetch explain après chat) ;
+  \item rapport RAG si CIN détecté.
+\end{itemize}
+
+\subsection{Client API}
+
+\texttt{frontend/src/api.ts} — fonctions :
+\begin{itemize}[leftmargin=*]
+  \item \texttt{explainByCin(model, cin)}
+  \item \texttt{chat(sessionId, message)}
+  \item \texttt{generateReport(cin)}
+  \item \texttt{downloadReport(cin, format)}
+\end{itemize}
+
+\subsection{Lancement frontend}
+
+\begin{lstlisting}[caption={Dev server React}]
+cd frontend
+npm install
+npm run dev
+\end{lstlisting}
+
+URL : \url{http://127.0.0.1:5173}
+
+\section{Intégration logo Talys}
+
+\begin{itemize}[leftmargin=*]
+  \item Frontend : \texttt{frontend/public/talys\_logo.png}
+  \item PDF : \texttt{reports/assets/talys\_logo.png}
+\end{itemize}
+
+\section{Dépendances Python principales}
+
+Extrait \texttt{requirements.txt} :
+\begin{itemize}[leftmargin=*]
+  \item fastapi, uvicorn, pydantic ;
+  \item pandas, numpy, scikit-learn, xgboost, joblib ;
+  \item torch ;
+  \item langchain, langchain-community, langchain-ollama, langgraph ;
+  \item reportlab, httpx, python-dotenv.
+\end{itemize}
+
+\section{Bonnes pratiques appliquées}
+
+\begin{itemize}[leftmargin=*]
+  \item Configuration centralisée (\texttt{src/config.py}) ;
+  \item Séparation packages (data, features, models, api, agent, rag) ;
+  \item Typage Python (TypedDict, annotations) ;
+  \item Endpoints métier vs endpoints techniques (Swagger) ;
+  \item Fallbacks gracieux (LLM, RAG, PDF).
+\end{itemize}
+
+\section{Captures d'écran (à insérer)}
+
+\todofig{Interface Explain — KPI et tableau crédits}
+\todofig{Interface Chat — orchestration et rapport RAG}
+\todofig{Swagger FastAPI — endpoints exposés}
+\todofig{Rapport PDF généré avec logo Talys}

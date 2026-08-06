@@ -1,0 +1,151 @@
+% Chapitre 8 — Agent et orchestration
+\chapter{Agent conversationnel et orchestration LangGraph}
+\label{ch:agent}
+
+\section{Motivation}
+
+Les endpoints REST individuels (\api{/explain/by-cin}, etc.) requièrent une connaissance technique de l'API. Les analystes crédit préfèrent une interaction en \textbf{langage naturel} :
+\begin{quote}
+\textit{« Analyse le CIN 88710263 en séquentiel »} \\
+\textit{« Compare les modèles pour le client 95822412 »} \\
+\textit{« Fais un rapport complet pour le CIN 88710263 »}
+\end{quote}
+
+L'agent conversationnel traduit ces requêtes en appels orchestrés aux modèles ML et au module RAG.
+
+\section{Choix technologiques}
+
+\begin{table}[H]
+  \centering
+  \caption{Comparaison des frameworks d'orchestration}
+  \begin{tabular}{|l|p{4cm}|p{4cm}|p{4cm}|}
+    \hline
+    & \textbf{LangChain Agents} & \textbf{LangGraph} & \textbf{LangFlow} \\
+    \hline
+    Contrôle du flux & Faible & \textbf{Élevé (graphe)} & Visuel \\
+    \hline
+    Debug / traçabilité & Moyen & \textbf{États explicites} & Moyen \\
+    \hline
+    Production & Variable & \textbf{Recommandé} & Prototypage \\
+    \hline
+    Choix projet & Écarté seul & \textbf{Retenu} & Non requis \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\textbf{LangGraph} a été retenu pour son modèle de \textbf{graphe d'états typé} (\texttt{AgentState}), facilitant le respect du principe SRP (un nœud = une responsabilité).
+
+\section{État partagé — AgentState}
+
+\begin{lstlisting}[caption={Structure AgentState (extrait)},label={lst:agentstate}]
+class AgentState(TypedDict, total=False):
+    session_id: str
+    user_message: str
+    cin: str | None
+    credit_id: int | None
+    intent: Intent
+    route: Literal["classic", "sequential", "graph", ...]
+    classic_result: dict | None
+    sequential_result: dict | None
+    graph_result: dict | None
+    rag_sources: list[dict]
+    report_markdown: str
+    final_answer: str
+    model_selected: str | None
+    errors: list[str]
+\end{lstlisting}
+
+\section{Détection d'intent}
+
+Heuristique par mots-clés (extensible vers un classificateur LLM) :
+
+\begin{table}[H]
+  \centering
+  \caption{Règles de détection d'intent}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \textbf{Intent} & \textbf{Mots-clés déclencheurs} \\
+    \hline
+    compare\_models & comparer, compare, vs, versus \\
+    \hline
+    full\_report & rapport, report, complet, full \\
+    \hline
+    graph\_score & graphe, graph, gnn, graphsage, réseau \\
+    \hline
+    sequential\_score & séquentiel, lstm, gru, transaction \\
+    \hline
+    classic\_score & (défaut) \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Extraction CIN}
+
+Expression régulière : \texttt{\textbackslash b(\textbackslash d\{6,32\})\textbackslash b}
+
+Exemples valides : \texttt{88710263}, \texttt{95822412}.
+
+\section{Endpoint /chat}
+
+\begin{lstlisting}[caption={Exemple requête /chat}]
+POST /chat
+{
+  "session_id": "demo-1",
+  "message": "Analyse le CIN 88710263 en séquentiel"
+}
+\end{lstlisting}
+
+Réponse :
+\begin{lstlisting}[caption={Exemple réponse /chat}]
+{
+  "session_id": "demo-1",
+  "model_selected": "sequential",
+  "cin": "88710263",
+  "intent": "sequential_score",
+  "answer": "Intent détecté: sequential_score | CIN: 88710263\n\n## Résumé\n..."
+}
+\end{lstlisting}
+
+\section{Gestion des erreurs}
+
+\begin{itemize}[leftmargin=*]
+  \item CIN absent $\rightarrow$ message guidant l'utilisateur ;
+  \item Échec modèle $\rightarrow$ erreur capturée dans \texttt{errors[]}, rapport fallback ;
+  \item Ollama indisponible $\rightarrow$ rapport Markdown déterministe sans LLM ;
+  \item \texttt{DISABLE\_LLM=1} lors des appels internes orchestrateur (performance).
+\end{itemize}
+
+\section{Mémoire conversationnelle}
+
+Une mémoire session simple (\texttt{\_chat\_history}) stocke les échanges pour continuité UI. Une évolution vers Redis ou PostgreSQL est prévue pour la production multi-utilisateurs.
+
+\section{LangChain vs LangGraph — rôle respectif}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{LangChain} : wrappers LLM (\texttt{ChatOllama}), messages System/Human ;
+  \item \textbf{LangGraph} : orchestration déterministe du workflow, indépendante du choix LLM.
+\end{itemize}
+
+Cette séparation permet de remplacer Ollama par un LLM cloud (Azure OpenAI, etc.) sans modifier le graphe.
+
+\section{Tests de l'agent}
+
+\begin{table}[H]
+  \centering
+  \caption{Scénarios de test agent}
+  \begin{tabular}{|p{5cm}|p{4cm}|p{4cm}|}
+    \hline
+    \textbf{Message} & \textbf{Intent attendu} & \textbf{Modèle} \\
+    \hline
+    Analyse CIN X & classic\_score & classic \\
+    \hline
+    CIN X en séquentiel & sequential\_score & sequential \\
+    \hline
+    CIN X graphe & graph\_score & graph \\
+    \hline
+    Rapport complet CIN X & full\_report & les 3 \\
+    \hline
+    Compare modèles CIN X & compare\_models & les 3 \\
+    \hline
+  \end{tabular}
+\end{table}

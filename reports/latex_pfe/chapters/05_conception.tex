@@ -1,0 +1,164 @@
+% Chapitre 5 — Conception et architecture
+\chapter{Conception et architecture du système}
+\label{ch:conception}
+
+\section{Architecture logique}
+
+L'architecture suit un modèle \textbf{3-tiers} enrichi d'une couche IA :
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Présentation} : application React (Explain + Chat) ;
+  \item \textbf{Application} : API FastAPI + orchestrateur LangGraph ;
+  \item \textbf{Domaine ML} : modèles classiques, séquentiels, graphe, score KYC ;
+  \item \textbf{Données} : CSV bruts, Parquet, features, index RAG, artefacts Joblib/PyTorch.
+\end{enumerate}
+
+\todofig{Diagramme de déploiement — Client React, API Uvicorn, Ollama, fichiers locaux}
+
+\section{Structure du dépôt}
+
+\begin{lstlisting}[caption={Arborescence principale du projet},label={lst:tree}]
+Talys_pfe/
+|-- data/raw/           # CSV (clients, credits, ...)
+|-- data/processed/     # Parquet nettoyes
+|-- data/features/      # features.parquet
+|-- src/
+|   |-- api/            # FastAPI (main.py, schemas.py)
+|   |-- agent/          # LangGraph orchestrator
+|   |-- rag/            # Index TF-IDF + retrieval
+|   |-- kyc/            # Score KYC
+|   |-- models/         # train, sequential, graph
+|   |-- features/       # engineering.py
+|   |-- data/           # loader, cleaner
+|   |-- llm/            # client Ollama
+|-- frontend/           # React + Vite
+|-- models/             # Artefacts (.joblib, .pt)
+|-- reports/            # Figures, knowledge_base, generated
+\end{lstlisting}
+
+\section{Workflow LangGraph}
+
+L'orchestrateur \texttt{CreditAgentOrchestrator} implémente le graphe d'états suivant :
+
+\begin{lstlisting}[language={},caption={Workflow LangGraph (PlantUML activité)},label={lst:langgraph}]
+START -> ExtractCIN -> DetectIntent -> ChoosePath
+  |-> RunClassic ----\
+  |-> RunSequential -+-> RetrieveDocs -> WriteReport -> Respond -> END
+  |-> RunGraph ------/
+  |-> RunFullReport (3 modeles)
+  |-> RunCompareModels (3 modeles)
+\end{lstlisting}
+
+\subsection{Nœuds et responsabilités (SRP)}
+
+\begin{table}[H]
+  \centering
+  \caption{Nœuds LangGraph}
+  \begin{tabular}{|l|p{9cm}|}
+    \hline
+    \textbf{Nœud} & \textbf{Responsabilité} \\
+    \hline
+    ExtractCIN & Regex CIN + credit\_id optionnel \\
+    \hline
+    DetectIntent & Mots-clés FR/EN (séquentiel, graphe, rapport, comparer) \\
+    \hline
+    ChoosePath & Mapping intent $\rightarrow$ route \\
+    \hline
+    RunClassic/Sequential/Graph & Appel endpoints internes (LLM désactivé) \\
+    \hline
+    RetrieveDocs & Multi-query RAG (TF-IDF) \\
+    \hline
+    WriteReport & Prompt LLM + fallback Markdown \\
+    \hline
+    Respond & Assemblage réponse finale \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Diagramme de classes (vue logique)}
+
+\begin{lstlisting}[language={},caption={Diagramme de classes simplifié (PlantUML)},label={lst:class}]
+@startuml
+package Frontend {
+  class ReactApp
+  class ApiClient
+}
+package Backend {
+  class FastAPIApp
+}
+package Orchestration {
+  class CreditAgentOrchestrator
+  class AgentState
+}
+package Scoring {
+  class ClassicScoring
+  class SequentialScoring
+  class GraphScoring
+}
+package RAG {
+  class RagIndex
+  class RagRetriever
+}
+ReactApp --> FastAPIApp
+FastAPIApp --> CreditAgentOrchestrator
+CreditAgentOrchestrator --> ClassicScoring
+CreditAgentOrchestrator --> SequentialScoring
+CreditAgentOrchestrator --> GraphScoring
+CreditAgentOrchestrator --> RagRetriever
+@enduml
+\end{lstlisting}
+
+\section{Endpoints API principaux}
+
+\begin{longtable}{|l|l|p{6cm}|}
+  \caption{Endpoints FastAPI exposés (Swagger)} \\
+  \hline
+  \textbf{Méthode} & \textbf{Route} & \textbf{Description} \\
+  \hline
+  \endfirsthead
+  \hline
+  \textbf{Méthode} & \textbf{Route} & \textbf{Description} \\
+  \hline
+  \endhead
+  GET & /health & Santé API + nom modèle \\
+  \hline
+  POST & /explain/by-cin & Scoring classique + LLM \\
+  \hline
+  POST & /explain/sequential/by-cin & Scoring séquentiel multi-crédits \\
+  \hline
+  POST & /explain/graph/by-cin & Scoring GraphSAGE \\
+  \hline
+  POST & /chat & Agent LangGraph \\
+  \hline
+  POST & /report/by-cin & Rapport Markdown + sources RAG \\
+  \hline
+  POST & /report/by-cin/download & Export MD ou PDF \\
+  \hline
+\end{longtable}
+
+Les routes \api{/predict*} existent mais sont masquées (\texttt{include\_in\_schema=False}) car l'usage métier passe par \api{/explain/*} et \api{/chat}.
+
+\section{Choix de conception clés}
+
+\subsection{Séparation scoring / explication}
+
+Les scores numériques sont \textbf{toujours} produits par les modèles ML déterministes. Le LLM et le RAG interviennent \textbf{uniquement} en aval pour rédiger des textes. Cette séparation garantit l'auditabilité réglementaire.
+
+\subsection{Entrée CIN seule}
+
+Les endpoints \api{/explain/*/by-cin} chargent automatiquement les features depuis les tables lookup (\texttt{clients.csv}, \texttt{credits.csv}, \texttt{features.parquet}), simplifiant l'intégration ICM future.
+
+\subsection{Index RAG curé}
+
+Seuls les documents métier (\texttt{knowledge\_base/}, \texttt{criteres\_score\_et\_crispdm.md}) sont indexés, excluant les rapports générés et fichiers de debug.
+
+\section{Sécurité et conformité (prototype)}
+
+\begin{itemize}[leftmargin=*]
+  \item Pas de données PII réelles en démonstration ;
+  \item CORS activé pour le frontend local ;
+  \item Disclaimer dans les rapports : décision humaine obligatoire ;
+  \item Pas de conseil juridique généré automatiquement.
+\end{itemize}
+
+Perspectives : authentification JWT, chiffrement des logs, hébergement sécurisé.

@@ -1,5 +1,6 @@
 {
-  "best_model_name": "Logistic Regression",
+  "best_model_name": "Deep Tabular Network (MLP+Embeddings)",
+  "model_type": "deep_tabular",
   "auc_roc": 1.0,
   "avg_precision": 1.0,
   "feature_columns": [
@@ -32,8 +33,43 @@
     "objet_enc",
     "profession_enc"
   ],
+  "num_cols": [
+    "montant",
+    "duree_mois",
+    "dti",
+    "avg_retard",
+    "max_retard",
+    "std_retard",
+    "n_payments",
+    "n_late",
+    "pct_late",
+    "n_en_retard",
+    "n_transactions",
+    "n_suspect",
+    "avg_tx_amount",
+    "total_depot",
+    "total_remboursement",
+    "total_retrait",
+    "total_transfert",
+    "ratio_retrait_depot",
+    "max_risk_relation",
+    "avg_risk_relation",
+    "n_relations",
+    "n_garant",
+    "age",
+    "revenu_mensuel",
+    "kyc_score"
+  ],
+  "cat_cols": [
+    "cycle_enc",
+    "objet_enc",
+    "profession_enc"
+  ],
+  "cat_cardinalities": [
+    4,
+    5,
+    8
+  ],
   "target_column": "en_defaut",
-  "train_rows": 12000,
-  "test_rows": 3001,
-  "default_rate": 0.2479
+  "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\deep_tabular.pt"
 }

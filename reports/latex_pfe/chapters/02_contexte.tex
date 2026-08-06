@@ -1,0 +1,141 @@
+% Chapitre 2 — Contexte du projet
+\chapter{Contexte du projet}
+\label{ch:contexte}
+
+\section{Présentation de l'organisme d'accueil}
+
+\textbf{Talys Consulting} est un cabinet de conseil spécialisé dans la transformation digitale, l'intelligence artificielle et l'accompagnement des institutions financières. L'entreprise intervient sur des problématiques de :
+\begin{itemize}[leftmargin=*]
+  \item modélisation du risque crédit et conformité KYC/AML ;
+  \item industrialisation de pipelines data et MLOps ;
+  \item intégration de solutions IA dans les systèmes d'information existants (SI bancaires, plateformes ICM).
+\end{itemize}
+
+Le projet PFE s'inscrit dans une démarche d'innovation visant à prototyper une brique de scoring intelligente réutilisable dans des contextes clients microfinance et banque inclusive.
+
+\section{Cadre académique — ESPRIT}
+
+Ce projet est réalisé dans le cadre du \textbf{cycle ingénieur} à l'\textbf{École Supérieure Privée d'Ingénierie et de Technologies (ESPRIT)}. La formation en ingénierie informatique y combine :
+\begin{itemize}[leftmargin=*]
+  \item fondements théoriques (algorithmique, probabilités, bases de données) ;
+  \item compétences en génie logiciel (UML, architecture, tests) ;
+  \item projets applicatifs en entreprise (PFE obligatoire).
+\end{itemize}
+
+L'encadrement académique assure le respect des standards de rédaction scientifique, la cohérence méthodologique et l'évaluation finale du livrable.
+
+\section{Encadrement}
+
+\begin{table}[H]
+  \centering
+  \caption{Composition de l'équipe d'encadrement}
+  \begin{tabular}{|l|l|p{7cm}|}
+    \hline
+    \textbf{Rôle} & \textbf{Nom} & \textbf{Responsabilités} \\
+    \hline
+    Encadrant entreprise & Oussema Midouni & Cadrage métier, revue architecture, priorités \\
+    \hline
+    Encadrant entreprise & Hamza Ksentini & Spécifications REF-08, validation dataset, revue technique \\
+    \hline
+    Encadrante académique & Salma Hajjem & Suivi PFE, relecture rapport, évaluation ESPRIT \\
+    \hline
+    Stagiaire ingénieur & Chedi Bouali & Conception, développement, tests, rédaction \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Planning du projet}
+
+Le projet s'est déroulé sur une période estimée à \textbf{16 semaines}, réparties selon le planning suivant :
+
+\begin{table}[H]
+  \centering
+  \caption{Planning macro du projet PFE}
+  \label{tab:planning}
+  \begin{tabular}{|c|l|p{8cm}|}
+    \hline
+    \textbf{S.} & \textbf{Phase} & \textbf{Activités principales} \\
+    \hline
+    1--2 & Cadrage & Lecture REF-08, analyse existant, setup environnement \\
+    \hline
+    3--4 & Données & Génération Faker, pipeline ETL, feature engineering \\
+    \hline
+    5--6 & Modèles classiques & LR, RF, XGBoost, métriques, API /predict \\
+    \hline
+    7--8 & KYC + LLM & Score KYC, Ollama, endpoint /explain \\
+    \hline
+    9--10 & Séquentiel & LSTM/GRU, transactions + remboursements \\
+    \hline
+    11--12 & Graphe & GraphSAGE, réseau relationnel \\
+    \hline
+    13--14 & Agent + RAG & LangGraph, TF-IDF, rapports Markdown/PDF \\
+    \hline
+    15--16 & UI + validation & React, tests, documentation, rapport PFE \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Document de référence REF-08}
+
+Le document \textbf{REF-08 — Spécifications Techniques} constitue la source normative du projet. Ses exigences principales sont :
+
+\subsection{Modèles d'intelligence artificielle}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Modèles classiques} : Régression Logistique, Forêt Aléatoire, XGBoost ;
+  \item \textbf{Modèles séquentiels} : LSTM, GRU pour l'analyse des transactions ;
+  \item \textbf{Modèles de graphes} : GNN / GraphSAGE pour l'analyse du réseau relationnel.
+\end{itemize}
+
+\subsection{Sorties des modèles}
+
+Chaque analyse doit produire :
+\begin{itemize}[leftmargin=*]
+  \item \keyword{Score KYC} (0--100) ;
+  \item \keyword{Score de risque crédit} / niveau (FAIBLE, MODERE, ELEVE) ;
+  \item \keyword{Probabilité de défaut} ;
+  \item \keyword{Explication du score} (Explainable AI).
+\end{itemize}
+
+\subsection{Agent conversationnel}
+
+\begin{itemize}[leftmargin=*]
+  \item Basé sur LangChain / LangGraph ;
+  \item Tools pour appeler dynamiquement les modèles ML ;
+  \item Mémoire conversationnelle ;
+  \item Génération de rapports (LLM + RAG).
+\end{itemize}
+
+\section{Environnement technique}
+
+\begin{table}[H]
+  \centering
+  \caption{Stack technologique du projet}
+  \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Couche} & \textbf{Technologies} \\
+    \hline
+    Langage & Python 3.11+, TypeScript \\
+    \hline
+    Data & Pandas, NumPy, Parquet, Faker \\
+    \hline
+    ML classique & scikit-learn, XGBoost, Joblib \\
+    \hline
+    Deep Learning & PyTorch (LSTM, GRU, GraphSAGE) \\
+    \hline
+    API & FastAPI, Pydantic, Uvicorn \\
+    \hline
+    LLM local & Ollama (llama3.2) \\
+    \hline
+    Orchestration & LangChain, LangGraph \\
+    \hline
+    RAG & TF-IDF (scikit-learn), index local Joblib \\
+    \hline
+    Frontend & React, Vite, TypeScript \\
+    \hline
+    Export & ReportLab (PDF), Markdown \\
+    \hline
+    IDE / OS & Cursor, Windows 10/11, Git \\
+    \hline
+  \end{tabular}
+\end{table}

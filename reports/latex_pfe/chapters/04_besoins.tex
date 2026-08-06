@@ -1,0 +1,162 @@
+% Chapitre 4 — Spécifications des besoins
+\chapter{Spécifications des besoins}
+\label{ch:besoins}
+
+\section{Besoins fonctionnels}
+
+\subsection{BF1 — Scoring par CIN}
+
+Le système doit accepter un \textbf{numéro CIN} (6 à 32 caractères) comme entrée unique et retourner :
+\begin{itemize}[leftmargin=*]
+  \item score KYC (0--100) ;
+  \item probabilité de défaut $p \in [0,1]$ ;
+  \item niveau de risque : FAIBLE ($p < 0.30$), MODERE ($0.30 \leq p < 0.60$), ELEVE ($p \geq 0.60$) ;
+  \item nom du modèle utilisé ;
+  \item message explicatif en français (LLM).
+\end{itemize}
+
+\subsection{BF2 — Multi-crédits (séquentiel)}
+
+Pour un client possédant plusieurs crédits, le modèle séquentiel doit retourner :
+\begin{itemize}[leftmargin=*]
+  \item un score par \texttt{credit\_id} ;
+  \item un résumé \textit{worst-case} (probabilité et risque max).
+\end{itemize}
+
+\subsection{BF3 — Agent conversationnel}
+
+L'endpoint \api{POST /chat} doit :
+\begin{itemize}[leftmargin=*]
+  \item extraire automatiquement le CIN du message ;
+  \item détecter l'intent : \texttt{classic\_score}, \texttt{sequential\_score}, \texttt{graph\_score}, \texttt{full\_report}, \texttt{compare\_models} ;
+  \item router vers le modèle approprié ;
+  \item générer une réponse structurée en Markdown.
+\end{itemize}
+
+\subsection{BF4 — Rapport RAG}
+
+L'endpoint \api{POST /report/by-cin} doit produire un rapport Markdown avec les sections :
+Résumé, Résultat classique, Résultat séquentiel, Résultat graphe, Justification, Recommandation, Références.
+
+\subsection{BF5 — Export PDF}
+
+L'endpoint \api{POST /report/by-cin/download} doit permettre le téléchargement en \texttt{.md} ou \texttt{.pdf} (logo Talys en en-tête).
+
+\subsection{BF6 — Interface React}
+
+L'interface doit proposer :
+\begin{itemize}[leftmargin=*]
+  \item vue \textbf{Explain} : sélection modèle + CIN + KPI + tableau crédits ;
+  \item vue \textbf{Chat} : conversation + métadonnées orchestration + KPI + rapport RAG.
+\end{itemize}
+
+\section{Besoins non fonctionnels}
+
+\begin{table}[H]
+  \centering
+  \caption{Exigences non fonctionnelles}
+  \begin{tabular}{|l|p{10cm}|}
+    \hline
+    \textbf{ID} & \textbf{Exigence} \\
+    \hline
+    BNF1 & Latence API scoring $<$ 2s (hors LLM) en local \\
+    \hline
+    BNF2 & LLM optionnel (variable \texttt{DISABLE\_LLM=1}) pour tests rapides \\
+    \hline
+    BNF3 & RAG offline (pas de dépendance cloud vector DB) \\
+    \hline
+    BNF4 & Séparation stricte : RAG n'altère jamais les scores ML \\
+    \hline
+    BNF5 & Documentation OpenAPI (Swagger) sur endpoints métier \\
+    \hline
+    BNF6 & Endpoints \texttt{/predict*} masqués du Swagger (usage interne) \\
+    \hline
+    BNF7 & Compatibilité Windows 10/11 pour démo soutenance \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Contraintes}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Données synthétiques} : pas de données clients réelles (confidentialité) ;
+  \item \textbf{LLM local} : Ollama requis pour explications et rapports complets ;
+  \item \textbf{Pas d'intégration ICM finale} : prévue en perspective, API prête ;
+  \item \textbf{Mono-utilisateur admin} : pas de gestion RBAC avancée dans le prototype.
+\end{itemize}
+
+\section{Diagramme de cas d'utilisation}
+
+Le diagramme suivant (PlantUML) modélise les interactions acteur--système :
+
+\begin{lstlisting}[language={},caption={Diagramme de cas d'utilisation (PlantUML)},label={lst:usecase}]
+@startuml
+left to right direction
+actor "Analyste Crédit" as Analyste
+actor "Manager Risque" as Manager
+actor "Administrateur" as Admin
+
+rectangle "Plateforme Scoring Risque Crédit" {
+  usecase "Analyser client par CIN" as UC1
+  usecase "Chat conversationnel" as UC2
+  usecase "Comparer modèles" as UC3
+  usecase "Générer rapport RAG" as UC4
+  usecase "Télécharger rapport PDF/MD" as UC5
+  usecase "Administration API" as UC6
+}
+
+Analyste --> UC1
+Analyste --> UC2
+Analyste --> UC4
+Analyste --> UC5
+Manager --> UC1
+Manager --> UC3
+Manager --> UC4
+Manager --> UC5
+Admin --> UC6
+@enduml
+\end{lstlisting}
+
+\section{User stories prioritaires}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textit{En tant qu'analyste}, je veux saisir un CIN et obtenir le score KYC et le risque en moins de 5 secondes.
+  \item \textit{En tant qu'analyste}, je veux poser une question en langage naturel (« analyse séquentielle CIN X ») sans connaître l'API.
+  \item \textit{En tant que manager}, je veux comparer les trois modèles sur un même client.
+  \item \textit{En tant qu'analyste}, je veux télécharger un rapport PDF avec logo Talys pour le comité crédit.
+  \item \textit{En tant qu'admin}, je veux vérifier que l'API répond via \api{GET /health}.
+\end{enumerate}
+
+\section{Matrice de traçabilité REF-08}
+
+\begin{longtable}{|p{4cm}|p{4cm}|p{5cm}|}
+  \caption{Traçabilité exigences REF-08 $\rightarrow$ implémentation} \\
+  \hline
+  \textbf{Exigence REF-08} & \textbf{Composant} & \textbf{Statut} \\
+  \hline
+  \endfirsthead
+  \hline
+  \textbf{Exigence REF-08} & \textbf{Composant} & \textbf{Statut} \\
+  \hline
+  \endhead
+  Score KYC & \texttt{src/kyc/score.py} & Implémenté \\
+  \hline
+  Modèles classiques & \texttt{src/models/train.py} & Implémenté \\
+  \hline
+  LSTM / GRU & \texttt{src/models/sequential/} & Implémenté \\
+  \hline
+  GraphSAGE & \texttt{src/models/graph/} & Implémenté \\
+  \hline
+  Probabilité défaut & Tous endpoints explain & Implémenté \\
+  \hline
+  Explication score & Ollama + RAG & Implémenté \\
+  \hline
+  Agent LangChain/Graph & \texttt{src/agent/langgraph\_workflow.py} & Implémenté \\
+  \hline
+  Rapport LLM+RAG & \texttt{/report/by-cin} & Implémenté \\
+  \hline
+  Interface utilisateur & \texttt{frontend/} & Implémenté \\
+  \hline
+  Intégration ICM & --- & Perspective \\
+  \hline
+\end{longtable}

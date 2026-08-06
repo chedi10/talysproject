@@ -1,0 +1,103 @@
+% Chapitre 3 — Analyse de l'existant et solution proposée
+\chapter{Analyse de l'existant et solution proposée}
+\label{ch:existant}
+
+\section{Situation actuelle (avant le projet)}
+
+Dans un contexte microfinance classique, l'évaluation du risque crédit repose généralement sur :
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Grilles de scoring statiques} : pondération fixe de variables (revenu, garanties, historique simplifié) ;
+  \item \textbf{Saisie manuelle} : l'analyste agrège les informations depuis plusieurs sources (SI core banking, fichiers Excel) ;
+  \item \textbf{Décision binaire} : acceptation/refus sans probabilité calibrée ni niveau intermédiaire ;
+  \item \textbf{Explicabilité faible} : peu de traçabilité sur les critères ayant influencé la décision ;
+  \item \textbf{Pas d'IA conversationnelle} : aucun canal naturel pour interroger le système ou générer des rapports.
+\end{enumerate}
+
+\section{Limites identifiées}
+
+\begin{table}[H]
+  \centering
+  \caption{Comparaison : situation actuelle vs solution proposée}
+  \label{tab:comparaison}
+  \small
+  \begin{tabularx}{\textwidth}{|>{\bfseries}p{3.2cm}|X|X|}
+    \hline
+    Dimension & Aujourd'hui (classique) & Notre projet (Agent IA) \\
+    \hline
+    Entrée & Formulaires / dossiers papier & CIN + langage naturel (chat) \\
+    \hline
+    Données & Profil + crédit (tabulaire) & Profil + crédit + transactions + remboursements + relations \\
+    \hline
+    Modèles & 1 règle ou 1 modèle & 3 familles : classique, séquentiel, graphe \\
+    \hline
+    Sorties & Score binaire ou note & KYC, proba défaut, risque, explication LLM \\
+    \hline
+    Explicabilité & Limitée & Rapport structuré + références RAG \\
+    \hline
+    Accès métier & Outil technique / back-office & Interface React + Chat \\
+    \hline
+    Évolutivité & Monolithe rigide & LangGraph modulaire (nœuds SRP) \\
+    \hline
+    Traçabilité & Faible & Sources documentaires citées \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\section{Solution proposée — Vue d'ensemble}
+
+La plateforme développée se compose de cinq blocs fonctionnels :
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Pipeline data} : génération, nettoyage, feature engineering multi-tables ;
+  \item \textbf{Moteur de scoring} : trois familles de modèles + score KYC dédié ;
+  \item \textbf{Couche explicative} : LLM local (Ollama) + RAG documentaire ;
+  \item \textbf{Orchestrateur agent} : LangGraph (ExtractCIN $\rightarrow$ DetectIntent $\rightarrow$ ChoosePath $\rightarrow$ Run* $\rightarrow$ RAG $\rightarrow$ Report $\rightarrow$ Respond) ;
+  \item \textbf{Interface utilisateur} : React (vues Explain et Chat) consommant l'API FastAPI.
+\end{enumerate}
+
+\todofig{Architecture globale de la plateforme Talys Scoring}
+
+\section{Acteurs et cas d'utilisation}
+
+Les acteurs principaux identifiés sont :
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Analyste crédit} : analyse un client par CIN, consulte scores et explications, génère des rapports ;
+  \item \textbf{Manager risque} : compare les modèles, supervise les décisions, télécharge des rapports PDF ;
+  \item \textbf{Administrateur} : supervise l'API, les logs et le monitoring (hors périmètre UI avancée).
+\end{itemize}
+
+Les cas d'utilisation couvrent : analyse par CIN, chat conversationnel, comparaison multi-modèles, rapport RAG complet, téléchargement MD/PDF.
+
+\section{Value proposition}
+
+La solution apporte une \textbf{vision multi-facettes du risque} :
+\begin{itemize}[leftmargin=*]
+  \item le modèle \textbf{classique} capture les agrégats tabulaires (DTI, retards moyens, ratios transactionnels) ;
+  \item le modèle \textbf{séquentiel} détecte les dégradations temporelles (retards croissants, transactions suspectes) ;
+  \item le modèle \textbf{graphe} identifie le risque de contagion via le réseau (garants, relations à haut risque).
+\end{itemize}
+
+L'agent conversationnel \textbf{démocratise l'accès} à ces modèles sans formation API, tandis que le RAG \textbf{ancre les explications} dans la documentation métier (REF-08, règles internes).
+
+\section{Positionnement par rapport à l'état de l'art}
+
+\begin{table}[H]
+  \centering
+  \caption{Positionnement technologique}
+  \begin{tabular}{|l|p{4cm}|p{4cm}|p{4cm}|}
+    \hline
+    & \textbf{Scoring traditionnel} & \textbf{ML tabulaire seul} & \textbf{Notre approche} \\
+    \hline
+    Données temporelles & Non & Partiel & LSTM/GRU \\
+    \hline
+    Données relationnelles & Non & Features agrégées & GraphSAGE \\
+    \hline
+    Explicabilité & Règles fixes & SHAP (non impl.) & LLM + RAG \\
+    \hline
+    Interaction & Formulaire & API technique & Chat + UI \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Le choix de \textbf{PyTorch pur} pour GraphSAGE (sans PyTorch Geometric) vise à réduire les dépendances et faciliter le déploiement sur Windows en environnement académique.

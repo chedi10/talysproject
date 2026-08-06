@@ -232,43 +232,15 @@ def generate_transactions(df_clients, avg_per_client=AVG_TX_PER_CLIENT):
 # 5) RELATIONS (Graph)
 # Logique: garant d’un client en défaut -> "contagion" de risque
 # =========================
-REL_TYPES = ["GARANT", "FAMILLE", "BUSINESS"]
+REL_TYPES = ["GARANT", "FAMILLE", "BUSINESS"]  # legacy — voir src.graph.builder
 
 
-def generate_relations(df_clients, df_credits, n_edges=18000):
-    # clients en défaut
-    default_clients = set(df_credits[df_credits["en_defaut"] == 1]["client_id"].unique())
+def generate_relations(df_clients, df_credits, df_remb=None, n_edges=25000):
+    from src.graph.builder import build_structural_relations
 
-    rows = []
-    rel_id = 1
-    client_ids = df_clients["client_id"].tolist()
-
-    for _ in range(n_edges):
-        src = random.choice(client_ids)
-        tgt = random.choice(client_ids)
-        while tgt == src:
-            tgt = random.choice(client_ids)
-
-        rtype = random.choices(REL_TYPES, weights=[0.35, 0.40, 0.25])[0]
-
-        # contagion: si relation GARANT vers un client en défaut => risque relation élevé
-        if rtype == "GARANT" and tgt in default_clients:
-            risk = random.randint(70, 100)
-        else:
-            risk = random.randint(5, 80)
-
-        rows.append(
-            {
-                "relation_id": rel_id,
-                "source_client_id": int(src),
-                "target_client_id": int(tgt),
-                "type_relation": rtype,
-                "risk_relation": risk,
-            }
-        )
-        rel_id += 1
-
-    return pd.DataFrame(rows)
+    if df_remb is None:
+        df_remb = pd.DataFrame({"client_id": [], "retard_jours": []})
+    return build_structural_relations(df_clients, df_credits, df_remb, max_edges=n_edges)
 
 
 # =========================
@@ -295,8 +267,8 @@ def main():
     df_tx.to_csv(RAW_DIR / "transactions.csv", index=False)
     print("   -> data/raw/transactions.csv OK")
 
-    print("5) Génération relations...")
-    df_rel = generate_relations(df_clients, df_credits)
+    print("5) Génération relations (graphe enrichi)...")
+    df_rel = generate_relations(df_clients, df_credits, df_remb)
     df_rel.to_csv(RAW_DIR / "relations.csv", index=False)
     print("   -> data/raw/relations.csv OK")
 

@@ -1,0 +1,100 @@
+% =============================================================================
+% Préambule — Rapport PFE Cycle Ingénieur (Overleaf)
+% =============================================================================
+\documentclass[12pt,a4paper,oneside,openany]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french,english]{babel}
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.8cm,headheight=15pt}
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{setspace}
+\usepackage{appendix}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{pdfpages}
+\usepackage{afterpage}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=green!50!black,
+  urlcolor=cyan!60!black,
+  pdftitle={Rapport PFE — Scoring Risque Crédit Talys},
+  pdfauthor={Chedi Bouali}
+}
+
+\definecolor{codebg}{RGB}{245,245,250}
+\definecolor{codeframe}{RGB}{200,200,210}
+\definecolor{talysblue}{RGB}{30,64,120}
+\definecolor{talysaccent}{RGB}{124,92,255}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  showstringspaces=false,
+  tabsize=2,
+  language=Python,
+  keywordstyle=\color{talysblue}\bfseries,
+  commentstyle=\color{gray},
+  stringstyle=\color{talysaccent},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  captionpos=b
+}
+
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{0.35em}
+\onehalfspacing
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\leftmark}
+\fancyhead[R]{\small ESPRIT — Talys Consulting}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{talysblue}}
+  {\chaptertitlename\ \thechapter}{14pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-10pt}{20pt}
+
+\titleformat{\section}{\Large\bfseries\color{talysblue}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+
+\newcommand{\todofig}[2][0.85]{
+  \begin{figure}[H]
+    \centering
+    \fbox{\parbox[c][5cm][c]{#1\textwidth}{\centering\small\textit{Figure à insérer : #2}}}
+    \caption{#2}
+  \end{figure}
+}
+
+\newcommand{\keyword}[1]{\textbf{#1}}
+\newcommand{\api}[1]{\texttt{#1}}

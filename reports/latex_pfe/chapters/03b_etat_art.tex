@@ -1,0 +1,114 @@
+% Chapitre — État de l'art (insertion après ch.3)
+\chapter{État de l'art et fondements théoriques}
+\label{ch:etatart}
+
+\section{Scoring crédit : approches traditionnelles}
+
+Le \textbf{scoring crédit} consiste à estimer la probabilité qu'un emprunteur ne rembourse pas ses obligations. Historiquement, deux grandes familles coexistent :
+
+\subsection{Modèles statistiques paramétriques}
+
+La \textbf{régression logistique} modélise :
+\[
+P(Y=1 \mid X) = \frac{1}{1 + e^{-(\beta_0 + \beta^T X)}}
+\]
+où $Y$ est la variable défaut et $X$ le vecteur de covariables. Avantages : interprétabilité des coefficients, rapidité, baseline robuste. Limites : hypothèse de linéarité du log-odds.
+
+\subsection{Modèles d'ensemble}
+
+Les \textbf{forêts aléatoires} (Breiman, 2001) agrègent des arbres de décision entraînés sur des sous-échantillons bootstrap. Elles capturent les non-linéarités et interactions sans feature engineering explicite.
+
+\textbf{XGBoost} (Chen \& Guestrin, 2016) optimise un gradient boosting régularisé, dominant de nombreux concours Kaggle tabulaires. Hyperparamètres clés : profondeur d'arbres, learning rate, nombre d'estimateurs.
+
+\section{Scoring en microfinance}
+
+La microfinance présente des spécificités :
+\begin{itemize}[leftmargin=*]
+  \item montants faibles, fréquence élevée de remboursements ;
+  \item absence d'historique bancaire formel (thin-file borrowers) ;
+  \item importance du réseau social (group lending, garants) ;
+  \item contraintes réglementaires KYC/AML renforcées.
+\end{itemize}
+
+Les institutions s'appuient sur des \textbf{scorecards} combinant revenu, activité, garanties et comportement de remboursement. L'IA permet d'intégrer des signaux alternatifs (transactions mobile money, géolocalisation — hors périmètre de ce PFE).
+
+\section{Modèles séquentiels pour le comportement}
+
+Les réseaux de neurones récurrents (RNN) modélisent des \textbf{séries temporelles} de transactions :
+\begin{itemize}[leftmargin=*]
+  \item \textbf{LSTM} (Hochreiter \& Schmidhuber, 1997) : portes forget/input/output, capture dépendances longues ;
+  \item \textbf{GRU} (Cho et al., 2014) : architecture simplifiée, moins de paramètres, entraînement plus rapide.
+\end{itemize}
+
+Application crédit : détecter une dégradation progressive (retards croissants, baisse des dépôts) avant le défaut effectif.
+
+\section{Graph Neural Networks}
+
+Les \textbf{GNN} généralisent le deep learning aux données graphe $G=(V,E)$. \textbf{GraphSAGE} (Hamilton et al., 2017) apprend des représentations par échantillonnage de voisinages :
+\[
+\mathbf{h}_v^{(k)} = \sigma\left(W^{(k)} \cdot \text{AGG}\left(\mathbf{h}_v^{(k-1)}, \{\mathbf{h}_u^{(k-1)} : u \in \mathcal{N}(v)\}\right)\right)
+\]
+
+En microfinance, le graphe clients-relations modélise la \textbf{contagion de risque} : un défaut de garant peut signaler un risque sur le client principal.
+
+\section{Explainable AI (XAI)}
+
+La réglementation (GDPR art. 22, directives Bâle) exige une \textbf{explicabilité} des décisions automatisées. Approches :
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Intrinsèque} : régression logistique, arbres ;
+  \item \textbf{Post-hoc} : SHAP, LIME sur modèles boîte noire ;
+  \item \textbf{LLM} : génération de texte à partir de features structurées (notre approche).
+\end{itemize}
+
+Notre projet combine scores ML déterministes + explication LLM + citations RAG pour traçabilité documentaire.
+
+\section{Retrieval-Augmented Generation}
+
+Lewis et al. (2020) formalisent le \textbf{RAG} : un retriever $p_\eta(z|x)$ sélectionne des documents $z$, un generator $p_\theta(y|x,z)$ produit la réponse $y$. Avantages :
+\begin{itemize}[leftmargin=*]
+  \item réduction des hallucinations ;
+  \item mise à jour du knowledge sans retraining LLM ;
+  \item citations vérifiables.
+\end{itemize}
+
+Notre implémentation TF-IDF est un baseline ; les embeddings denses (BERT, E5) améliorent la sémantique.
+
+\section{Agents LLM et LangGraph}
+
+Les \textbf{agents} LLM utilisent des \textit{tools} (appels API, bases de données) dans une boucle planification-action. LangGraph structure cette boucle en \textbf{graphe d'états fini}, offrant :
+\begin{itemize}[leftmargin=*]
+  \item reproductibilité des workflows ;
+  \item checkpoints et reprise ;
+  \item parallélisation de branches ;
+  \item séparation claire des responsabilités (nœuds SRP).
+\end{itemize}
+
+\section{Positionnement de notre contribution}
+
+\begin{table}[H]
+  \centering
+  \caption{Contribution vs littérature}
+  \begin{tabular}{|p{4cm}|p{5cm}|p{4cm}|}
+    \hline
+    \textbf{Aspect} & \textbf{Littérature} & \textbf{Notre projet} \\
+    \hline
+    Multi-paradigme & Souvent un seul modèle & 3 familles orchestrées \\
+    \hline
+    Interaction & API ou batch & Chat LangGraph \\
+    \hline
+    Explicabilité & SHAP ou texte libre & LLM + RAG REF-08 \\
+    \hline
+    Déploiement & Cloud ML & Local Windows + Ollama \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Normes et conformité}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Bâle II/III} : exigences fonds propres selon risque crédit ;
+  \item \textbf{KYC/AML} : identification client, lutte blanchiment ;
+  \item \textbf{Protection des données} : minimisation, finalité, droit d'accès (RGPD-like).
+\end{itemize}
+
+Le prototype inclut des disclaimers et sépare scoring automatique de décision humaine, préparant une certification future.

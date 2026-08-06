@@ -1,0 +1,140 @@
+% Chapitre 6 — Données et feature engineering
+\chapter{Collecte, génération et préparation des données}
+\label{ch:donnees}
+
+\section{Stratégie de données}
+
+Faute d'accès à des données clients réelles (contraintes de confidentialité et RGPD), le projet s'appuie sur un \textbf{dataset synthétique} généré via la bibliothèque \textbf{Faker}. Ce choix permet :
+\begin{itemize}[leftmargin=*]
+  \item de reproduire la structure multi-tables d'un SI microfinance ;
+  \item de contrôler la distribution des défauts et des retards ;
+  \item de valider le pipeline technique de bout en bout avant intégration ICM.
+\end{itemize}
+
+\section{Volume et schéma}
+
+\begin{table}[H]
+  \centering
+  \caption{Tables du dataset synthétique}
+  \begin{tabular}{|l|r|p{7cm}|}
+    \hline
+    \textbf{Table} & \textbf{Volume approx.} & \textbf{Contenu principal} \\
+    \hline
+    clients.csv & 5\,000 & CIN, age, revenu, statut KYC, profession, ville \\
+    \hline
+    credits.csv & 15\,000 & montant, durée, DTI, cycle, objet, \textbf{en\_defaut} \\
+    \hline
+    transactions.csv & 120\,000+ & type, montant, date, flag suspect \\
+    \hline
+    remboursements.csv & 90\,000+ & échéances, retards (jours), statut \\
+    \hline
+    relations.csv & 8\,000+ & type relation, risk\_relation, garant \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Pipeline ETL}
+
+Le pipeline data comprend trois étapes orchestrées :
+
+\subsection{Chargement (\texttt{loader.py})}
+
+\begin{itemize}[leftmargin=*]
+  \item Lecture CSV avec typage explicite (\texttt{cin} en string, dates parsées) ;
+  \item Validation de la présence des colonnes obligatoires.
+\end{itemize}
+
+\subsection{Nettoyage (\texttt{cleaner.py})}
+
+\begin{itemize}[leftmargin=*]
+  \item Suppression des doublons ;
+  \item Clipping des valeurs aberrantes (montants, retards) ;
+  \item Suppression des self-loops dans \texttt{relations.csv} ;
+  \item Export Parquet dans \texttt{data/processed/}.
+\end{itemize}
+
+\subsection{Feature engineering (\texttt{engineering.py})}
+
+Agrégations par \texttt{credit\_id} et jointures multi-tables :
+
+\begin{table}[H]
+  \centering
+  \caption{Familles de features}
+  \small
+  \begin{tabular}{|l|p{9cm}|}
+    \hline
+    \textbf{Famille} & \textbf{Variables produites} \\
+    \hline
+    KYC / profil & \texttt{kyc\_score}, age, revenu, profession encodée \\
+    \hline
+    Crédit & montant, durée, DTI, cycle, objet \\
+    \hline
+    Remboursement & avg\_retard, max\_retard, pct\_late, n\_en\_retard \\
+    \hline
+    Transactions & n\_transactions, n\_suspect, ratio retrait/dépôt \\
+    \hline
+    Réseau & max/avg risk\_relation, n\_relations, n\_garant \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Score KYC}
+
+Le score KYC (0--100) remplace l'encodage brut du statut KYC dans les features de scoring. Il est calculé par un modèle de régression logistique entraîné à prédire le statut KYC (\texttt{OK}, \texttt{A\_VERIFIER}, \texttt{RISQUE}) à partir de :
+\begin{itemize}[leftmargin=*]
+  \item âge ;
+  \item revenu mensuel ;
+  \item profession (encodée 0--7).
+\end{itemize}
+
+La probabilité de la classe \texttt{OK} est transformée en score 0--100 via :
+\[
+\text{KYC\_score} = 100 \times P(\text{OK} \mid X)
+\]
+
+\section{Variable cible}
+
+La cible binaire \texttt{en\_defaut} indique si un crédit est en défaut. La métrique principale d'évaluation est l'\textbf{AUC-ROC}, complétée par l'\textbf{Average Precision} (AP) adaptée aux classes déséquilibrées.
+
+\section{Prévention du data leakage}
+
+Pour les modèles séquentiels :
+\begin{itemize}[leftmargin=*]
+  \item les événements (transactions, remboursements) sont filtrés \textbf{avant la date de début du crédit} analysé ;
+  \item les séquences sont construites par couple (client\_id, credit\_id) ;
+  \item padding/truncation à une longueur fixe (\texttt{seq\_len}).
+\end{itemize}
+
+Pour le graphe :
+\begin{itemize}[leftmargin=*]
+  \item les features nœud agrègent l'historique passé uniquement ;
+  \item split train/test au niveau client pour éviter la fuite inter-crédits.
+\end{itemize}
+
+\section{Qualité des données — constats EDA}
+
+Analyses exploratoires réalisées (notebook \texttt{01\_eda.ipynb}) :
+\begin{itemize}[leftmargin=*]
+  \item taux de défaut global : environ 15--20\% (synthétique) ;
+  \item corrélation positive entre retards moyens et défaut ;
+  \item clients avec transactions suspectes : sur-représentés dans la classe défaut ;
+  \item distribution des probabilités prédites souvent bimodale (à recalibrer en production).
+\end{itemize}
+
+\section{Limites du dataset synthétique}
+
+\begin{enumerate}[leftmargin=*]
+  \item Les corrélations métier réelles peuvent différer ;
+  \item Absence de saisonnalité macro-économique ;
+  \item Nécessité de recalibrer les seuils FAIBLE/MODERE/ELEVE sur données réelles ;
+  \item Validation croisée avec les experts Talys requise avant déploiement.
+\end{enumerate}
+
+\section{Perspectives données}
+
+\begin{itemize}[leftmargin=*]
+  \item Connexion ICM pour flux temps réel ;
+  \item Feature store centralisé ;
+  \item Monitoring de dérive (PSI, KS) en production ;
+  \item Anonymisation/pseudonymisation pour environnements de test.
+\end{itemize}

@@ -1,0 +1,154 @@
+% Chapitre 7 — Modélisation ML
+\chapter{Modélisation du risque de crédit}
+\label{ch:modelisation}
+
+\section{Vue d'ensemble des approches}
+
+Trois paradigmes complémentaires ont été implémentés pour capturer différentes dimensions du risque :
+
+\begin{table}[H]
+  \centering
+  \caption{Synthèse des familles de modèles}
+  \begin{tabular}{|l|l|l|p{4cm}|}
+    \hline
+    \textbf{Famille} & \textbf{Algorithmes} & \textbf{Entrée} & \textbf{Force} \\
+    \hline
+    Classique & LR, RF, XGBoost & Features tabulaires & Rapidité, interprétabilité \\
+    \hline
+    Séquentiel & LSTM, GRU & Séries temporelles tx/remb & Dynamique comportementale \\
+    \hline
+    Graphe & GraphSAGE & Réseau clients & Risque relationnel \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Modèles classiques}
+
+\subsection{Protocole d'entraînement}
+
+Script : \texttt{python -m src.models.train}
+
+\begin{enumerate}[leftmargin=*]
+  \item Split train/test 80/20 (\texttt{random\_state=42}) ;
+  \item Pipeline scikit-learn : StandardScaler + classificateur ;
+  \item Comparaison AUC-ROC sur le jeu de test ;
+  \item Sauvegarde du meilleur modèle dans \texttt{models/best\_model.joblib}.
+\end{enumerate}
+
+\subsection{Hyperparamètres}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Logistic Regression} : \texttt{max\_iter=1000}, pas de régularisation forte ;
+  \item \textbf{Random Forest} : 300 arbres, profondeur illimitée ;
+  \item \textbf{XGBoost} : 400 estimateurs, \texttt{learning\_rate=0.05}.
+\end{itemize}
+
+\subsection{Mapping probabilité $\rightarrow$ risque}
+
+\begin{equation}
+\text{risk\_level} =
+\begin{cases}
+\text{FAIBLE} & \text{si } p < 0.30 \\
+\text{MODERE} & \text{si } 0.30 \leq p < 0.60 \\
+\text{ELEVE} & \text{si } p \geq 0.60
+\end{cases}
+\end{equation}
+
+Ces seuils sont configurables et doivent être recalibrés avec le métier.
+
+\subsection{Résultats indicatifs}
+
+Sur le jeu synthétique, les trois modèles atteignent des AUC élevées ($> 0.95$), traduisant la séparabilité artificielle des classes. En production, des AUC plus modestes (0.65--0.80) sont attendues.
+
+\todofig{Courbes ROC — comparaison LR, RF, XGBoost}
+
+\section{Modèles séquentiels (LSTM / GRU)}
+
+\subsection{Construction des séquences}
+
+Module \texttt{src/models/sequential/data.py} :
+\begin{itemize}[leftmargin=*]
+  \item fusion des événements transactions et remboursements ;
+  \item tri chronologique, filtrage temporel anti-leakage ;
+  \item vecteur par événement : type encodé, montant normalisé, retard, flags ;
+  \item séquences de longueur fixe avec padding zéro.
+\end{itemize}
+
+\subsection{Architecture réseau}
+
+\begin{itemize}[leftmargin=*]
+  \item Couche embedding / projection linéaire ;
+  \item RNN (LSTM ou GRU) \texttt{hidden\_size=64}, 1 couche ;
+  \item Couche dense + sigmoïde (classification binaire).
+\end{itemize}
+
+\subsection{Entraînement}
+
+\begin{lstlisting}[caption={Commande d'entraînement séquentiel}]
+python -m src.models.sequential.train
+\end{lstlisting}
+
+Métriques : AUC-ROC, Average Precision. Artefacts : \texttt{models/sequential\_lstm.pt}, \texttt{models/sequential\_gru.pt}.
+
+\subsection{Scoring multi-crédits}
+
+L'API \api{/explain/sequential/by-cin} itère sur tous les crédits actifs du client et retourne :
+\begin{itemize}[leftmargin=*]
+  \item tableau \texttt{credits[]} avec proba par \texttt{credit\_id} ;
+  \item agrégat worst-case pour le résumé global.
+\end{itemize}
+
+\section{Modèle de graphe (GraphSAGE)}
+
+\subsection{Construction du graphe}
+
+Module \texttt{src/models/graph/data.py} :
+\begin{itemize}[leftmargin=*]
+  \item nœuds = clients ;
+  \item arêtes = relations (garant, famille, associé...) ;
+  \item features nœud = agrégats tabulaires + KYC ;
+  \item label = défaut du crédit le plus récent (ou agrégat client).
+\end{itemize}
+
+\subsection{Implémentation GraphSAGE}
+
+Implémentation \textbf{PyTorch pure} (sans PyG) :
+\begin{itemize}[leftmargin=*]
+  \item 2 couches de message passing (mean aggregator) ;
+  \item ReLU + dropout ;
+  \item classification binaire par nœud.
+\end{itemize}
+
+\subsection{Inférence}
+
+L'API charge les tenseurs \texttt{graph\_x}, \texttt{graph\_edge\_index} et le mapping \texttt{client\_id $\rightarrow$ index} pour prédire la proba du client demandé par CIN.
+
+\section{Comparaison des modèles}
+
+\begin{table}[H]
+  \centering
+  \caption{Quand utiliser quel modèle ?}
+  \begin{tabular}{|p{3cm}|p{10cm}|}
+    \hline
+    \textbf{Modèle} & \textbf{Cas d'usage recommandé} \\
+    \hline
+    Classique & Décision rapide, onboarding, profils standards \\
+    \hline
+    Séquentiel & Historique riche, retards progressifs, multi-crédits \\
+    \hline
+    Graphe & Forte interdépendance réseau, garants à risque \\
+    \hline
+    Comparaison & Revue manager, arbitrage comité crédit \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Limites et améliorations}
+
+\begin{itemize}[leftmargin=*]
+  \item Recalibration des probabilités (Platt scaling, isotonic) ;
+  \item SHAP values pour explicabilité tabulaire ;
+  \item Ensemble stacking des trois familles ;
+  \item Validation temporelle (walk-forward) ;
+  \item GPU pour entraînement séquentiel à grande échelle.
+\end{itemize}

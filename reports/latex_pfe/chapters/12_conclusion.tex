@@ -1,0 +1,77 @@
+% Chapitre 12 — Conclusion
+\chapter{Conclusion et perspectives}
+\label{ch:conclusion}
+
+\section{Bilan du projet}
+
+Ce projet de fin d'études a permis de concevoir et implémenter une \textbf{plateforme intelligente de scoring de risque crédit} répondant aux exigences majeures du document REF-08 de Talys Consulting. Les contributions principales sont :
+
+\begin{enumerate}[leftmargin=*]
+  \item un \textbf{pipeline data reproductible} depuis la génération synthétique jusqu'aux features multi-tables ;
+  \item un \textbf{score KYC} calculé (0--100) intégré au pipeline de scoring ;
+  \item trois familles de modèles ML (\textbf{classique}, \textbf{séquentiel}, \textbf{graphe}) offrant des visions complémentaires du risque ;
+  \item une \textbf{API FastAPI} industrialisable avec endpoints métier par CIN ;
+  \item un \textbf{agent conversationnel LangGraph} capable de router les requêtes en langage naturel ;
+  \item un module \textbf{RAG local} enrichissant explications et rapports sans altérer les scores ;
+  \item une \textbf{interface React} accessible aux analystes crédit.
+\end{enumerate}
+
+Le prototype démontre la \textbf{faisabilité technique} d'un système explicable, multi-modèles et conversationnel dans le contexte de la microfinance tunisienne.
+
+\section{Apports personnels}
+
+Ce stage m'a permis de développer des compétences en :
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Machine Learning} : feature engineering, entraînement, évaluation, deep learning (RNN, GNN) ;
+  \item \textbf{GenAI} : prompt engineering, RAG, orchestration LangGraph ;
+  \item \textbf{Génie logiciel} : API REST, frontend React, architecture modulaire ;
+  \item \textbf{Gestion de projet} : cadrage REF-08, livraisons incrémentales, documentation.
+\end{itemize}
+
+\section{Limites}
+
+\begin{itemize}[leftmargin=*]
+  \item Données \textbf{synthétiques} non représentatives de la réalité métier ;
+  \item Seuils de risque et calibration des probabilités à affiner ;
+  \item RAG TF-IDF basique vs embeddings sémantiques ;
+  \item Pas d'intégration ICM ni de déploiement cloud ;
+  \item Sécurité (auth, RBAC) non implémentée dans le prototype.
+\end{itemize}
+
+\section{Perspectives}
+
+\subsection{Court terme (3--6 mois)}
+
+\begin{itemize}[leftmargin=*]
+  \item Intégration connecteur ICM (lecture CIN temps réel) ;
+  \item Recalibration seuils avec experts crédit Talys ;
+  \item Suite pytest + CI/CD GitHub Actions ;
+  \item Embeddings sémantiques (sentence-transformers) pour RAG.
+\end{itemize}
+
+\subsection{Moyen terme (6--12 mois)}
+
+\begin{itemize}[leftmargin=*]
+  \item MLOps : versioning modèles (MLflow), monitoring dérive ;
+  \item SHAP / LIME pour explicabilité tabulaire réglementaire ;
+  \item Authentification SSO entreprise ;
+  \item Déploiement Docker + Kubernetes.
+\end{itemize}
+
+\subsection{Long terme}
+
+\begin{itemize}[leftmargin=*]
+  \item Score comportemental temps réel (streaming transactions) ;
+  \item Federated learning inter-institutions (respect confidentialité) ;
+  \item Certification audit conformité BCT / Bâle ;
+  \item Multi-langue (arabe, français) pour l'agent conversationnel.
+\end{itemize}
+
+\section{Mot de fin}
+
+L'intelligence artificielle ne remplace pas l'analyste crédit : elle \textbf{augmente} sa capacité d'analyse en automatisant le calcul, en agrégeant des signaux multi-sources et en produisant des explications structurées. Ce projet constitue une base solide pour une industrialisation chez Talys Consulting et ses clients du secteur microfinance.
+
+\vfill
+\begin{center}
+\textit{« La meilleure décision crédit combine data, modèle et jugement humain. »}
+\end{center}

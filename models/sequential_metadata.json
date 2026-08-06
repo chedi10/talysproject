@@ -11,12 +11,20 @@
       "auc_roc": 0.7552840386658473,
       "avg_precision": 0.4669664639631636,
       "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\sequential_gru.pt"
+    },
+    {
+      "model_name": "Transformer (Deep Learning)",
+      "auc_roc": 0.758291408807009,
+      "avg_precision": 0.498869615170245,
+      "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\sequential_transformer.pt",
+      "model_type": "transformer"
     }
   ],
   "best": {
-    "model_name": "GRU baseline",
-    "auc_roc": 0.7552840386658473,
-    "avg_precision": 0.4669664639631636,
-    "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\sequential_gru.pt"
+    "model_name": "Transformer (Deep Learning)",
+    "auc_roc": 0.758291408807009,
+    "avg_precision": 0.498869615170245,
+    "artifact": "C:\\Users\\bouali\\Desktop\\Talys_pfe\\models\\sequential_transformer.pt",
+    "model_type": "transformer"
   }
 }

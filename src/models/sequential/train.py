@@ -113,6 +113,7 @@ def train_sequential_baselines(seq_len: int = 30, epochs: int = 8):
     results = []
     results.append(_train_one("LSTM baseline", "lstm", ds, epochs=epochs))
     results.append(_train_one("GRU baseline", "gru", ds, epochs=epochs))
+    results.append(_train_transformer("Transformer (Deep Learning)", ds, epochs=max(epochs * 3, 24)))
 
     best = max(results, key=lambda x: x["auc_roc"])
     meta_path = MODELS_DIR / "sequential_metadata.json"
@@ -121,6 +122,72 @@ def train_sequential_baselines(seq_len: int = 30, epochs: int = 8):
 
     print(f"Best sequential model: {best['model_name']} (AUC={best['auc_roc']:.4f})")
     print(f"Sequential metadata saved at {meta_path}")
+
+
+def _train_transformer(model_name: str, ds, epochs: int = 24, batch_size: int = 128):
+    import torch
+    from torch.utils.data import TensorDataset, DataLoader
+    from src.models.sequential.transformer_model import TransformerCreditRiskModel
+
+    torch.manual_seed(RANDOM_STATE)
+    np.random.seed(RANDOM_STATE)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    X_train = torch.tensor(ds.X_train, dtype=torch.float32)
+    y_train = torch.tensor(ds.y_train, dtype=torch.float32)
+    X_test = torch.tensor(ds.X_test, dtype=torch.float32)
+
+    loader = DataLoader(TensorDataset(X_train, y_train), batch_size=batch_size, shuffle=True)
+
+    model = TransformerCreditRiskModel(
+        input_dim=ds.input_dim,
+        d_model=64,
+        nhead=4,
+        num_layers=2,
+        dropout=0.2,
+        seq_len=ds.seq_len,
+    ).to(device)
+
+    n_pos = float((ds.y_train == 1).sum())
+    n_neg = float((ds.y_train == 0).sum())
+    pos_weight = torch.tensor([n_neg / max(n_pos, 1.0)], dtype=torch.float32, device=device)
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
+
+    for epoch in range(1, epochs + 1):
+        model.train()
+        losses = []
+        for xb, yb in loader:
+            xb, yb = xb.to(device), yb.to(device)
+            optimizer.zero_grad()
+            loss = criterion(model(xb), yb)
+            loss.backward()
+            optimizer.step()
+            losses.append(float(loss.item()))
+        if epoch == 1 or epoch % 8 == 0 or epoch == epochs:
+            print(f"[{model_name}] epoch {epoch}/{epochs} - loss: {np.mean(losses):.4f}")
+
+    model.eval()
+    with torch.no_grad():
+        logits = model(X_test.to(device)).cpu().numpy()
+        proba = 1.0 / (1.0 + np.exp(-logits))
+
+    auc = float(roc_auc_score(ds.y_test, proba))
+    ap = float(average_precision_score(ds.y_test, proba))
+    print(f"[{model_name}] AUC={auc:.4f} AP={ap:.4f}")
+
+    out_path = MODELS_DIR / "sequential_transformer.pt"
+    torch.save(
+        {
+            "state_dict": model.state_dict(),
+            "input_dim": ds.input_dim,
+            "seq_len": ds.seq_len,
+            "model_type": "transformer",
+        },
+        out_path,
+    )
+    print(f"[{model_name}] saved at {out_path}")
+    return {"model_name": model_name, "auc_roc": auc, "avg_precision": ap, "artifact": str(out_path), "model_type": "transformer"}
 
 
 if __name__ == "__main__":

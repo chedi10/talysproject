@@ -17,9 +17,12 @@ FEATURES_DIR   = DATA_DIR / "features"
 MODELS_DIR     = ROOT_DIR / "models"
 REPORTS_DIR    = ROOT_DIR / "reports"
 FIGURES_DIR    = REPORTS_DIR / "figures"
+LOCAL_DATA_DIR = ROOT_DIR / "data" / "local"
+DATABASE_FILE  = LOCAL_DATA_DIR / "talys.db"
+DATABASE_URL   = f"sqlite:///{DATABASE_FILE.as_posix()}"
 
 # ─── Create missing directories at import time ───────────────────────────────
-for _d in [PROCESSED_DIR, FEATURES_DIR, MODELS_DIR, FIGURES_DIR]:
+for _d in [PROCESSED_DIR, FEATURES_DIR, MODELS_DIR, FIGURES_DIR, LOCAL_DATA_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
 
 # ─── Raw file paths ──────────────────────────────────────────────────────────

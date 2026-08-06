@@ -32,6 +32,38 @@ Talys_pfe/
 └── README.md
 ```
 
+## Authentification (Agent / Admin)
+
+L'application démarre sur **Connexion / Créer un compte**. Les données utilisateurs et l'historique sont stockés **localement** dans `data/local/` :
+
+| Fichier | Contenu |
+|---------|---------|
+| `users.json` | Comptes (mot de passe hashé PBKDF2) |
+| `sessions.json` | Tokens de session |
+| `activity.json` | Historique des analyses (explain, chat, rapports) |
+| `chat_sessions.json` | Messages chat par utilisateur |
+
+### Rôles
+
+- **Agent** : voit uniquement **ses** recherches et **ses** sessions chat
+- **Admin** : voit **toute** l'activité + liste des utilisateurs
+
+### Compte admin par défaut (premier démarrage)
+
+- Utilisateur : `admin`
+- Mot de passe : `admin123` (modifiable via variable `TALYS_ADMIN_PASSWORD`)
+
+### Endpoints auth
+
+- `POST /auth/register` — créer un compte **agent**
+- `POST /auth/login` — connexion
+- `GET /auth/history` — historique (filtré par rôle)
+- `GET /auth/users` — admin uniquement
+
+Tous les endpoints métier (`/explain/*`, `/chat`, `/report/*`) exigent le header `Authorization: Bearer <token>`.
+
+---
+
 ## ⚡ Démarrage rapide
 
 ### 1. Installer les dépendances
